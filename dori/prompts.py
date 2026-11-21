@@ -105,6 +105,33 @@ _KOREAN_RULES_FORMAL = """\
 _OTHER_SPEECH = "Use the level of formality that fits this style in every message."
 _OTHER_RULES = "- Their formality should fit this style. Flag only a clear mismatch."
 
+# How Dori itself writes English when English is the language being practiced.
+_ENGLISH_VOICE = (
+    ' Type like a person, not an assistant: no speeches, no "not this, but that" lines,'
+    " no lists of three for effect, and no period at the end of a message."
+)
+
+_ENGLISH_SPEECH = {
+    "casual": "Text the way friends really text in English: lowercase is fine, contractions, and shortcuts like lol, omg, ngl and tbh."
+    + _ENGLISH_VOICE,
+    "friendly": "Text in warm, relaxed English with contractions and a little slang."
+    + _ENGLISH_VOICE,
+    "romantic": "Text in soft, affectionate English with contractions and a pet name now and then."
+    + _ENGLISH_VOICE,
+    "business": "Text in polite, professional English: full words and no slang. It is still a text, not an email, so no greeting line and no sign-off."
+    + _ENGLISH_VOICE,
+}
+
+# What counts as a mistake in the learner's English.
+_ENGLISH_RULES_INFORMAL = """\
+- This is texting, so none of these is an error: lowercase letters (including a lowercase i), no period at the end, missing commas, missing apostrophes (im, dont, thats), and shortcuts such as u, ur, idk, gonna, wanna, tho and lol.
+- Real errors are things like the wrong tense or verb form (she dont like it, yesterday i go), a wrong word, a wrong preposition, or words in the wrong order."""
+
+_ENGLISH_RULES_FORMAL = """\
+- This is still texting, so none of these is an error, even at work: lowercase letters, no period at the end, missing commas and missing apostrophes.
+- Shortcuts such as u, ur, gonna or lol do not fit a business chat. Write those out as a fix.
+- Real errors are things like the wrong tense or verb form, a wrong word, a wrong preposition, or words in the wrong order."""
+
 CHAT = """You are Dori (돌이), a texting buddy who helps {name} practice {target} over iMessage. {name}'s native language is {native}.
 
 ABOUT {name}
@@ -137,7 +164,7 @@ Look at the {target} in their new message.
 - A correction means a native speaker would call it wrong. A more natural or more common way to say the same thing is not a correction. If your explanation would say that both versions work, return null instead.
 - Fix at most 2 errors, the most important ones.
 - Change only the words that are wrong. Keep everything else exactly as they wrote it: their word choices, pronouns and particles, even where you would phrase it differently. For example, if they wrote 사과를 좋아, the fix is 사과를 좋아해, not 사과 좋아해.
-- Never add, remove or change punctuation, spacing or line breaks. Two sentences in a row with no period between them is normal in a text, so leave them alone.
+- Never add, remove or change punctuation, capital letters, spacing or line breaks. Two sentences in a row with no period between them is normal in a text, so leave them alone.
 {speech_rules}
 - Shortenings and slang that fit this style are not errors. Use the conversation to tell a typo from slang.
 - If they dropped a {native} word into a {target} sentence because they did not know the word, give them the {target} word. That counts as a fix.
@@ -175,12 +202,19 @@ def is_korean(language: str) -> bool:
     return "korean" in language.lower() or "한국" in language
 
 
+def is_english(language: str) -> bool:
+    return "english" in language.lower() or "영어" in language
+
+
 def chat_system(user: dict[str, Any]) -> str:
     """The chat system prompt, filled in from the user's profile."""
     style = user["style"] if user["style"] in STYLES else "friendly"
     if is_korean(user["target"]):
         speech = _KOREAN_SPEECH[style]
         speech_rules = _KOREAN_RULES_FORMAL if style == "business" else _KOREAN_RULES_INFORMAL
+    elif is_english(user["target"]):
+        speech = _ENGLISH_SPEECH[style]
+        speech_rules = _ENGLISH_RULES_FORMAL if style == "business" else _ENGLISH_RULES_INFORMAL
     else:
         speech, speech_rules = _OTHER_SPEECH, _OTHER_RULES
     mode_note = ""

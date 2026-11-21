@@ -203,3 +203,31 @@ def test_chat_turn_names_the_message_an_inline_reply_answers():
         "Jay sent it as an inline reply to this earlier message from Jay:\n<<<\n주문?\n>>>"
     )
     assert "this earlier message from Dori:\n<<<\n바로 주문할게!\n>>>" in to_doris
+
+
+ENGLISH_LEARNER = {**USER, "native": "Korean", "target": "English"}
+
+
+def test_english_as_the_practice_language_gets_texting_rules():
+    system = prompts.chat_system(ENGLISH_LEARNER)
+
+    assert "lowercase letters (including a lowercase i)" in system
+    assert "no period at the end" in system
+    assert "shortcuts such as u, ur, idk" in system
+    assert "Type like a person, not an assistant" in system
+    assert "This chat is in 반말" not in system
+    assert placeholders(system) == []
+
+
+def test_business_english_allows_lowercase_but_not_shortcuts():
+    system = prompts.chat_system({**ENGLISH_LEARNER, "style": "business"})
+
+    assert "It is still a text, not an email" in system
+    assert "none of these is an error, even at work" in system
+    assert "do not fit a business chat" in system
+
+
+def test_capital_letters_are_never_part_of_a_fix():
+    for user in (USER, ENGLISH_LEARNER):
+        system = prompts.chat_system(user)
+        assert "Never add, remove or change punctuation, capital letters" in system
