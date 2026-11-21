@@ -167,3 +167,16 @@ def test_explain_mode_adds_a_note_about_follow_up_questions():
     assert "RIGHT NOW" in in_explain
     assert "go back in character" in in_explain
     assert placeholders(in_explain) == []
+
+
+def test_chat_turn_names_the_message_an_inline_reply_answers():
+    own = {"role": "user", "kind": "chat", "text": "주문?"}
+    doris = {"role": "bot", "kind": "chat", "text": "바로 주문할게!"}
+
+    to_own = prompts.chat_turn(USER, [], "whats that", own)
+    to_doris = prompts.chat_turn(USER, [], "whats that", doris)
+
+    assert to_own.endswith(
+        "Jay sent it as an inline reply to this earlier message from Jay:\n<<<\n주문?\n>>>"
+    )
+    assert "this earlier message from Dori:\n<<<\n바로 주문할게!\n>>>" in to_doris

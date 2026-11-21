@@ -201,14 +201,30 @@ def _transcript_line(message: dict[str, Any], name: str) -> str:
     return f"{speaker}: {message['text'].replace(chr(10), ' / ')}"
 
 
-def chat_turn(user: dict[str, Any], history: list[dict[str, Any]], text: str) -> str:
-    """The user message for one chat turn: the transcript, then the new message."""
+def chat_turn(
+    user: dict[str, Any],
+    history: list[dict[str, Any]],
+    text: str,
+    replied_to: dict[str, Any] | None = None,
+) -> str:
+    """The user message for one chat turn: the transcript, then the new message.
+
+    ``replied_to`` is the stored message the user answered with an inline
+    reply, if any. It tells the model what "what's that?" points at.
+    """
     name = user["name"]
     transcript = "\n".join(_transcript_line(message, name) for message in history)
-    return (
+    turn = (
         f"Conversation so far:\n{transcript or '(nothing yet)'}\n\n"
         f"{name}'s new message:\n<<<\n{text}\n>>>"
     )
+    if replied_to is not None:
+        author = name if replied_to["role"] == "user" else "Dori"
+        turn += (
+            f"\n\n{name} sent it as an inline reply to this earlier message from {author}:"
+            f"\n<<<\n{replied_to['text']}\n>>>"
+        )
+    return turn
 
 
 def opening_turn(user: dict[str, Any]) -> str:
