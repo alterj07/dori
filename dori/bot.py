@@ -52,11 +52,17 @@ async def say_bubbles(phone: str, reply: str) -> None:
         await say(phone, bubble)
 
 
+_LONG_DASH = re.compile(r"\s*[—–]\s*")
+
+
 def _text(value: Any) -> str:
-    """A model field as clean text. Missing, null and "null" all become ""."""
+    """A model field as clean text. Missing, null and "null" all become "".
+
+    Long dashes become commas: nobody types them in a text message.
+    """
     if not isinstance(value, str):
         return ""
-    value = value.strip()
+    value = _LONG_DASH.sub(", ", value).strip()
     return "" if value.lower() in ("null", "none") else value
 
 

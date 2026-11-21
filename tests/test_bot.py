@@ -225,6 +225,16 @@ def test_a_long_reply_is_capped_at_three_texts():
     assert bot.split_bubbles("하나\n\n둘\n셋\n넷\n다섯") == ["하나", "둘", "셋 넷 다섯"]
 
 
+async def test_long_dashes_from_the_model_become_commas(sent, model, chatting):
+    model.replies = [
+        {"intent": "question", "explanation": "헐 is slang for surprise — like whoa.", "reply": ""}
+    ]
+
+    await bot.handle_turn(PHONE, message("what does 헐 mean?", "in-5"))
+
+    assert [m["text"] for m in sent] == ["헐 is slang for surprise, like whoa."]
+
+
 async def test_a_language_question_gets_only_the_answer(sent, model, chatting):
     model.replies = [
         {
