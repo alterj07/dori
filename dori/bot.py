@@ -180,6 +180,8 @@ async def _chat(phone: str, user: dict[str, Any], text: str, message_id: str | N
         if not answer:
             raise BotError("the model gave no answer to the question")
         await say(phone, answer, kind="explanation")
+        # Stay out of character, so follow-up questions are not interrupted.
+        store.set_mode(phone, "explain")
         return
 
     corrected = bool(correction) and not _same(correction, text)
@@ -189,6 +191,7 @@ async def _chat(phone: str, user: dict[str, Any], text: str, message_id: str | N
     if not reply and not corrected:
         raise BotError("the model gave no reply")
     await say_bubbles(phone, reply)
+    store.set_mode(phone, "chat")
 
 
 # --- ❓ reactions ---
