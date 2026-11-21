@@ -100,7 +100,7 @@ async def handle_turn(phone: str, event: Event) -> None:
         await say(phone, prompts.TIPS, kind="system")
         return
 
-    await _chat(phone, user, text, event.message_id)
+    await _chat(phone, user, text, event.message_id, event.in_reply_to)
 
 
 # --- Onboarding ---
@@ -192,20 +192,29 @@ def _history(phone: str) -> list[dict[str, Any]]:
     return [message for message in recent if message["kind"] != "system"]
 
 
-async def _chat(phone: str, user: dict[str, Any], text: str, message_id: str | None) -> None:
+async def _chat(
+    phone: str,
+    user: dict[str, Any],
+    text: str,
+    message_id: str | None,
+    in_reply_to: str | None = None,
+) -> None:
     """One chat turn, from a single model call.
 
     If the user's message has a real error, Dori first replies inline to that
     message with the fix, then carries on the conversation. If the user asked
     a question about the language, Dori answers it instead.
+
+    ``in_reply_to`` is the id of the message the user replied to inline. The
+    model is shown that message, so "what's that?" has something to point at.
     """
     history = _history(phone)
+    replied_to = store.find_by_loop_id(phone, in_reply_to) if in_reply_to else None
     store.add_message(phone, "user", text, loop_id=message_id)
 
-    data = await llm.chat_json(
-        prompts.chat_system(user),
-        [{"role": "user", "content": prompts.chat_turn(user, history, text)}],
-    )
+    system = prompts.chat_system(user)
+    content = prompts.chat_turn(user, history, text, replied_to)
+    data = await llm.chat_json(system, [{"role": "user", "content": content}])
     correction = _text(data.get("correction"))
     explanation = _text(data.get("explanation"))
     reply = _text(data.get("reply"))
