@@ -67,7 +67,7 @@ Rules:
 - A short answer usually belongs to a field that is still needed. If only style is still needed and they write "casual please", that is the style.
 - People often answer with a bare list in the order they were asked: name, native language, language to practice, level, style. In "Mina english korean beginner casual", Mina is the name, English is native and Korean is target.
 - The name can be in any script, for example 현 or Jay. A first word that is not a language, a level or a style is the name.
-- If the whole message names only one language and nothing says which it is, it goes in target if target is still needed. Otherwise it goes in native."""
+- If the whole message names only one language and nothing says which it is: Korean is the language they want to practice (target), and any other language is their native one."""
 
 
 def onboarding_system(known: dict[str, str], missing: list[str]) -> str:

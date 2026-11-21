@@ -121,7 +121,7 @@ async def _onboard(phone: str, user: dict[str, Any], text: str, message_id: str 
         [{"role": "user", "content": text}],
     )
     updates = _profile_updates(data, missing)
-    _keep_asked_order(text, updates)
+    _settle_languages(text, updates, missing)
     if updates:
         user = store.save_user(phone, **updates)
 
@@ -156,21 +156,32 @@ _SAYS_WHICH_LANGUAGE = re.compile(
 )
 
 
-def _keep_asked_order(text: str, updates: dict[str, str]) -> None:
-    """Undo a native/target mix-up when both languages came as a bare list.
+def _settle_languages(text: str, updates: dict[str, str], missing: list[str]) -> None:
+    """Undo the two ways the model mixes up native and target.
 
-    The welcome asks for the native language first, so "english korean" means
-    an English speaker practicing Korean. The model sometimes reads it the
-    other way round. If the message says which is which, it is left alone.
+    Both rules apply only when the message does not say which language is
+    which. If it does ("I speak Korean and want to learn English"), the
+    model's reading is left alone.
     """
+    if _SAYS_WHICH_LANGUAGE.search(text):
+        return
     native, target = updates.get("native"), updates.get("target")
-    if not native or not target or _SAYS_WHICH_LANGUAGE.search(text):
+
+    if native and target:
+        # A bare list: the welcome asks for the native language first, so
+        # "english korean" is an English speaker practicing Korean.
+        lowered = text.lower()
+        native_at, target_at = lowered.find(native.lower()), lowered.find(target.lower())
+        if native_at > target_at > -1:
+            updates["native"], updates["target"] = target, native
         return
-    lowered = text.lower()
-    native_at, target_at = lowered.find(native.lower()), lowered.find(target.lower())
-    if native_at == -1 or target_at == -1 or native_at < target_at:
-        return
-    updates["native"], updates["target"] = target, native
+
+    # One language on its own: Dori is a Korean practice buddy, so a lone
+    # "Korean" is what they want to practice and anything else is native.
+    if native and "target" in missing and prompts.is_korean(native):
+        updates["target"] = updates.pop("native")
+    elif target and "native" in missing and not prompts.is_korean(target):
+        updates["native"] = updates.pop("target")
 
 
 async def _open_conversation(phone: str, user: dict[str, Any]) -> None:

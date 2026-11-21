@@ -155,6 +155,26 @@ async def test_two_languages_in_a_bare_list_are_read_in_the_order_asked(sent, mo
     assert (user["native"], user["target"]) == ("English", "Korean")
 
 
+async def test_korean_on_its_own_is_the_language_to_practice(sent, model):
+    store.save_user(PHONE)
+    model.replies = [{"name": "Jayden", "native": "Korean", "target": None}]
+
+    await bot.handle_turn(PHONE, message("jayden\nkorean"))
+
+    user = store.get_user(PHONE)
+    assert (user["name"], user["native"], user["target"]) == ("Jayden", None, "Korean")
+
+
+async def test_another_language_on_its_own_is_the_native_one(sent, model):
+    store.save_user(PHONE, name="Jayden")
+    model.replies = [{"native": None, "target": "English"}]
+
+    await bot.handle_turn(PHONE, message("english"))
+
+    user = store.get_user(PHONE)
+    assert (user["native"], user["target"]) == ("English", None)
+
+
 async def test_languages_the_user_labelled_are_left_as_the_model_read_them(sent, model):
     store.save_user(PHONE)
     model.replies = [
