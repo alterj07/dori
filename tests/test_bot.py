@@ -436,3 +436,30 @@ async def test_reset_works_in_the_middle_of_onboarding(sent, model):
     assert store.get_user(PHONE) is None
     assert model.calls == []
     assert [m["text"] for m in sent] == [prompts.RESET_DONE]
+
+
+@pytest.mark.parametrize("command", ["help", "Help", "HELP!"])
+async def test_help_resends_the_tips_without_calling_the_model(sent, model, chatting, command):
+    await bot.handle_turn(PHONE, message(command))
+
+    assert sent == [{"text": prompts.TIPS, "reply_to": None}]
+    assert model.calls == []
+    assert store.get_user(PHONE)["mode"] == "chat"
+
+
+async def test_help_keeps_the_user_in_explain_mode(sent, model, chatting):
+    store.set_mode(PHONE, "explain")
+
+    await bot.handle_turn(PHONE, message("help"))
+
+    assert store.get_user(PHONE)["mode"] == "explain"
+
+
+async def test_help_during_onboarding_is_read_as_an_answer(sent, model):
+    store.save_user(PHONE)
+    model.replies = [{}]
+
+    await bot.handle_turn(PHONE, message("help"))
+
+    assert len(model.calls) == 1
+    assert [m["text"] for m in sent] == [prompts.ask_missing(list(store.PROFILE_FIELDS))]
