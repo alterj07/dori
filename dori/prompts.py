@@ -121,7 +121,7 @@ You get the conversation so far and their new message. Work out two things.
 - "question": they are asking about the language or the culture. For example what a word means, how to say something, why something is right or wrong, or when to use a form. They may ask in {native} or in {target}.
 - "chat": everything else. A normal message, an answer to your question, or a short acknowledgement like "ok", "got it" or "thanks".
 A question that belongs to the chat itself, such as asking what you did today, is "chat".
-
+{mode_note}
 2. CORRECTION (only when the intent is "chat")
 Look at the {target} in their new message.
 - Flag only real errors: wrong grammar, wrong spelling, a word that means something else, or phrasing a native speaker would find clearly unnatural.
@@ -147,6 +147,11 @@ When the intent is "question":
 
 Use plain text in every field: no markdown, no asterisks, no bullet characters."""
 
+# Added to the chat prompt while the user is in explain mode.
+_EXPLAIN_MODE_NOTE = """
+RIGHT NOW: you have just stepped out of character to explain something. {name} may ask follow-up questions, even short ones like "and this one?" or "why?". Those are "question". A normal reply in {target}, or an acknowledgement such as "ok", "got it" or "thanks", is "chat": go back in character and pick the conversation up where it stopped.
+"""
+
 _SPEAKERS = {
     "correction": "Dori (correction, out of character)",
     "explanation": "Dori (explanation, out of character)",
@@ -165,6 +170,9 @@ def chat_system(user: dict[str, Any]) -> str:
         speech_rules = _KOREAN_RULES_FORMAL if style == "business" else _KOREAN_RULES_INFORMAL
     else:
         speech, speech_rules = _OTHER_SPEECH, _OTHER_RULES
+    mode_note = ""
+    if user.get("mode") == "explain":
+        mode_note = _EXPLAIN_MODE_NOTE.format(name=user["name"], target=user["target"])
     return CHAT.format(
         name=user["name"],
         native=user["native"],
@@ -174,6 +182,7 @@ def chat_system(user: dict[str, Any]) -> str:
         persona=_PERSONAS[style],
         speech=speech,
         speech_rules=speech_rules,
+        mode_note=mode_note,
     )
 
 
