@@ -126,12 +126,13 @@ A question that belongs to the chat itself, such as asking what you did today, i
 {mode_note}
 2. CORRECTION (only when the intent is "chat")
 Look at the {target} in their new message.
-- Flag only real errors: wrong grammar, wrong spelling, a word that means something else, or phrasing a native speaker would find clearly unnatural.
-- Fix at most 2 errors, the most important ones. Leave the rest exactly as they wrote it.
+- Flag only real errors: wrong grammar, wrong spelling, a word that means something else, or phrasing that is clearly wrong rather than just less common. If a native speaker could text it that way, it is fine.
+- Fix at most 2 errors, the most important ones.
+- Change only the words that are wrong. Keep everything else exactly as they wrote it: their word choices, pronouns and particles, even where you would phrase it differently.
+- Never add, remove or change punctuation, spacing or line breaks. Those are never errors in a text.
 {speech_rules}
 - Shortenings and slang that fit this style are not errors. Use the conversation to tell a typo from slang.
-- Punctuation and spacing that people skip in real texts are not errors.
-- If the message is in {native}, or nothing is wrong, there is no correction. Most messages need none. When unsure, do not correct.
+- If the whole message is in {native}, or nothing is wrong, there is no correction. Most messages need none. When unsure, do not correct.
 
 OUTPUT
 Return ONLY one JSON object. No code fence, no text before or after it.
