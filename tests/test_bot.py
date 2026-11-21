@@ -300,3 +300,68 @@ async def test_an_empty_answer_from_the_model_raises(sent, model, chatting):
         await bot.handle_turn(PHONE, message("친구 만났어", "in-5"))
 
     assert sent == []
+
+
+# --- ❓ reactions ---
+
+
+def question_reaction(message_id, text=""):
+    return Event(kind="reaction", text=text, message_id=message_id, reaction="question")
+
+
+async def test_a_question_reaction_explains_that_message_inline(sent, model, chatting):
+    model.replies = [{"explanation": "It means: haha, what did you do this weekend?"}]
+
+    await bot.handle_turn(PHONE, question_reaction("out-0"))
+
+    assert sent == [
+        {"text": "It means: haha, what did you do this weekend?", "reply_to": "out-0"}
+    ]
+    assert store.recent(PHONE)[-1]["kind"] == "explanation"
+    assert store.get_user(PHONE)["mode"] == "explain"
+    assert model.calls[0]["user"].endswith("<<<\nㅋㅋ 주말에 뭐 했어?\n>>>")
+
+
+async def test_a_reaction_with_an_unknown_id_is_matched_by_its_text(sent, model, chatting):
+    store.add_message(PHONE, "bot", "오 대박!", loop_id="out-1")
+    store.add_message(PHONE, "bot", "나도 가고 싶다", loop_id="out-2")
+    model.replies = [{"explanation": "대박 means awesome."}]
+
+    await bot.handle_turn(PHONE, question_reaction("some-other-id", text="오 대박!"))
+
+    assert sent == [{"text": "대박 means awesome.", "reply_to": "out-1"}]
+
+
+async def test_a_reaction_that_matches_nothing_explains_doris_latest_message(sent, model, chatting):
+    store.add_message(PHONE, "user", "영화 봤어", loop_id="in-1")
+    store.add_message(PHONE, "bot", "오 무슨 영화?", loop_id="out-1")
+    model.replies = [{"explanation": "It asks which movie you saw."}]
+
+    await bot.handle_turn(PHONE, question_reaction("some-other-id"))
+
+    assert sent == [{"text": "It asks which movie you saw.", "reply_to": "out-1"}]
+
+
+async def test_a_reaction_on_the_users_own_message_is_ignored(sent, model, chatting):
+    store.add_message(PHONE, "user", "영화 봤어", loop_id="in-1")
+
+    await bot.handle_turn(PHONE, question_reaction("in-1"))
+
+    assert sent == []
+    assert model.calls == []
+
+
+async def test_a_reaction_before_onboarding_is_finished_is_ignored(sent, model):
+    await bot.handle_turn(PHONE, question_reaction("out-1"))
+    store.save_user(PHONE)
+    await bot.handle_turn(PHONE, question_reaction("out-1"))
+
+    assert sent == []
+    assert model.calls == []
+
+
+async def test_an_empty_explanation_raises(sent, model, chatting):
+    model.replies = [{"explanation": ""}]
+
+    with pytest.raises(bot.BotError):
+        await bot.handle_turn(PHONE, question_reaction("out-0"))
