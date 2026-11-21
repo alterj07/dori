@@ -163,14 +163,14 @@ _SPEAKERS = {
 }
 
 
-def _is_korean(language: str) -> bool:
+def is_korean(language: str) -> bool:
     return "korean" in language.lower() or "한국" in language
 
 
 def chat_system(user: dict[str, Any]) -> str:
     """The chat system prompt, filled in from the user's profile."""
     style = user["style"] if user["style"] in STYLES else "friendly"
-    if _is_korean(user["target"]):
+    if is_korean(user["target"]):
         speech = _KOREAN_SPEECH[style]
         speech_rules = _KOREAN_RULES_FORMAL if style == "business" else _KOREAN_RULES_INFORMAL
     else:

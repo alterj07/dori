@@ -165,9 +165,25 @@ async def _open_conversation(phone: str, user: dict[str, Any]) -> None:
 _SPACING_AND_PUNCTUATION = re.compile(r"[\s.,!?~…]+")
 
 
+_HANGUL = re.compile(r"[가-힣ㄱ-ㅎㅏ-ㅣ]")
+
+
 def _same(first: str, second: str) -> bool:
     """True when two texts differ only in spacing and punctuation."""
     return _SPACING_AND_PUNCTUATION.sub("", first) == _SPACING_AND_PUNCTUATION.sub("", second)
+
+
+def usable_correction(user: dict[str, Any], text: str, correction: str) -> bool:
+    """Whether a correction from the model is worth sending.
+
+    The model sometimes "fixes" punctuation, or translates a message that was
+    written in the user's own language. Neither is a mistake in their Korean.
+    """
+    if not correction or _same(correction, text):
+        return False
+    if prompts.is_korean(user["target"]) and not _HANGUL.search(text):
+        return False
+    return True
 
 
 def _history(phone: str) -> list[dict[str, Any]]:
@@ -203,7 +219,7 @@ async def _chat(phone: str, user: dict[str, Any], text: str, message_id: str | N
         store.set_mode(phone, "explain")
         return
 
-    corrected = bool(correction) and not _same(correction, text)
+    corrected = usable_correction(user, text, correction)
     if corrected:
         fix = f"✏️ {correction}\n💬 {explanation}" if explanation else f"✏️ {correction}"
         await say(phone, fix, kind="correction", reply_to=message_id)

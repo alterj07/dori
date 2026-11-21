@@ -212,6 +212,26 @@ async def test_a_fix_that_only_changes_spacing_or_punctuation_is_dropped(sent, m
     assert [m["text"] for m in sent] == ["오 좋았겠다!"]
 
 
+async def test_a_message_with_no_korean_in_it_is_never_corrected(sent, model, chatting):
+    model.replies = [
+        chat_reply("오 운동했구나!", correction="오늘 헬스장 갔어", explanation="In Korean.")
+    ]
+
+    await bot.handle_turn(PHONE, message("I went to the gym today", "in-5"))
+
+    assert [m["text"] for m in sent] == ["오 운동했구나!"]
+
+
+async def test_an_english_word_inside_korean_can_still_be_corrected(sent, model, chatting):
+    model.replies = [
+        chat_reply("오 헬스장 갔구나", correction="나 오늘 헬스장 갔어", explanation="gym is 헬스장.")
+    ]
+
+    await bot.handle_turn(PHONE, message("나 오늘 gym 갔어", "in-5"))
+
+    assert sent[0] == {"text": "✏️ 나 오늘 헬스장 갔어\n💬 gym is 헬스장.", "reply_to": "in-5"}
+
+
 async def test_each_line_of_a_reply_is_its_own_text(sent, model, chatting):
     model.replies = [chat_reply("오, 무슨 영화 봤어?\n나도 영화 볼까 고민 중이거든")]
 
