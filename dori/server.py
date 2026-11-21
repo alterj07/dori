@@ -86,17 +86,21 @@ class Dispatcher:
         text: str,
         message_id: str | None,
         in_reply_to: str | None = None,
+        delay: float | None = None,
     ) -> None:
         """Buffer one inbound text and (re)start the user's debounce timer.
 
         ``in_reply_to`` is the id of the message this text replies to inline.
+        ``delay`` is how long to wait for more texts; the default is
+        ``config.DEBOUNCE_S``.
         """
         self._buffers.setdefault(phone, []).append((text, message_id, in_reply_to))
         timer = self._timers.pop(phone, None)
         if timer is not None:
             timer.cancel()
         loop = asyncio.get_running_loop()
-        self._timers[phone] = loop.call_later(config.DEBOUNCE_S, self._on_timer, phone)
+        wait = config.DEBOUNCE_S if delay is None else delay
+        self._timers[phone] = loop.call_later(wait, self._on_timer, phone)
 
     def add_reaction(
         self, phone: str, message_id: str | None, reaction: str, text: str = ""
@@ -187,6 +191,18 @@ def _authorized(request: Request) -> bool:
     return bool(secret) and hmac.compare_digest(given.encode(), secret.encode())
 
 
+def _debounce_for(phone: str) -> float:
+    """How long to wait for more texts from this person.
+
+    Someone who is still signing up tends to send name, language and level as
+    separate texts with a pause to type each one, so they get a longer wait.
+    """
+    user = store.get_user(phone)
+    if user is not None and user["mode"] == "onboarding":
+        return config.ONBOARDING_DEBOUNCE_S
+    return config.DEBOUNCE_S
+
+
 def route(payload: dict[str, Any]) -> str:
     """Hand one webhook to the dispatcher. Returns a short note for the log."""
     # Older LoopMessage payloads call these two fields alert_type and recipient.
@@ -204,7 +220,7 @@ def route(payload: dict[str, Any]) -> str:
         # An inline reply names the message it answers in a "thread" object.
         thread = payload.get("thread")
         in_reply_to = thread.get("initial_message_id") if isinstance(thread, dict) else None
-        dispatcher.add_message(phone, text, message_id, in_reply_to)
+        dispatcher.add_message(phone, text, message_id, in_reply_to, _debounce_for(phone))
         if message_id and config.TYPING_SECONDS > 0:
             dispatcher.spawn(loop_client.show_typing(message_id))
         return "buffered"

@@ -7,7 +7,7 @@ import json
 import httpx
 import pytest
 
-from dori import bot, config, loop_client, server
+from dori import bot, config, loop_client, server, store
 from dori.events import Event
 
 PHONE = "+15555550100"
@@ -51,6 +51,7 @@ def log_lines():
 def fast_dispatcher(monkeypatch):
     """A fresh dispatcher per test, with a short debounce and no typing calls."""
     monkeypatch.setattr(config, "DEBOUNCE_S", 0.05)
+    monkeypatch.setattr(config, "ONBOARDING_DEBOUNCE_S", 0.05)
     monkeypatch.setattr(config, "TYPING_SECONDS", 0)
     monkeypatch.setattr(server, "dispatcher", server.Dispatcher())
 
@@ -137,6 +138,19 @@ async def test_a_burst_of_texts_becomes_one_turn(client, turns):
     await server.dispatcher.idle()
 
     assert turns == [(PHONE, Event(kind="message", text="안녕\n뭐해?\n나 심심해", message_id="in-3"))]
+
+
+async def test_someone_still_signing_up_gets_a_longer_wait(client, turns, monkeypatch):
+    monkeypatch.setattr(config, "ONBOARDING_DEBOUNCE_S", 0.4)
+    store.save_user(PHONE)  # a user who has not finished onboarding
+
+    await client.post("/webhook", json=inbound("jayden", message_id="in-1"), headers=AUTH)
+    await asyncio.sleep(0.2)  # well past the normal debounce
+    assert turns == []
+
+    await client.post("/webhook", json=inbound("english", message_id="in-2"), headers=AUTH)
+    await server.dispatcher.idle()
+    assert [event.text for _, event in turns] == ["jayden\nenglish"]
 
 
 async def test_an_inline_reply_carries_the_id_of_the_message_it_answers(client, turns):

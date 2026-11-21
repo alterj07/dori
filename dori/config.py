@@ -47,6 +47,7 @@ LLM_MAX_TOKENS = 500
 
 # --- Bot behaviour ---
 DEBOUNCE_S = 3.0  # quiet time before a burst of texts becomes one turn
+ONBOARDING_DEBOUNCE_S = 6.0  # longer while signing up: people send their answers in pieces
 BUBBLE_GAP_S = 0.4  # pause between the texts of one reply, so they arrive in order
 HISTORY_LIMIT = 20  # messages of context sent to the model
 
