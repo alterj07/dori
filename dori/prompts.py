@@ -147,7 +147,7 @@ When the intent is "chat":
 
 When the intent is "question":
 - "correction": null
-- "explanation": your answer in {native}, out of character, short enough for a text (2 to 4 lines). Give the meaning first, then anything useful about tone, slang or culture. Write {target} words in their own script.
+- "explanation": your answer in {native}, out of character, short enough for a text (2 to 4 lines). Give the meaning first, then anything useful about tone, slang or culture. Write {target} words in their own script, and never follow one with its romanization in brackets.
 - "reply": ""
 
 Use plain text in every field: no markdown, no asterisks, no bullet characters, no dashes. Do not romanize {target} unless they ask how something is pronounced."""
