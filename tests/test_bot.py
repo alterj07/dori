@@ -365,3 +365,43 @@ async def test_an_empty_explanation_raises(sent, model, chatting):
 
     with pytest.raises(bot.BotError):
         await bot.handle_turn(PHONE, question_reaction("out-0"))
+
+
+# --- Explain mode ---
+
+QUESTION = {
+    "intent": "question",
+    "correction": None,
+    "explanation": "대박 means awesome.",
+    "reply": "",
+}
+
+
+async def test_a_question_puts_the_user_in_explain_mode(sent, model, chatting):
+    model.replies = [dict(QUESTION)]
+
+    await bot.handle_turn(PHONE, message("what does 대박 mean?", "in-5"))
+
+    assert store.get_user(PHONE)["mode"] == "explain"
+
+
+async def test_follow_up_questions_stay_in_explain_mode(sent, model, chatting):
+    model.replies = [dict(QUESTION), {**QUESTION, "explanation": "헐 means whoa."}]
+
+    await bot.handle_turn(PHONE, message("what does 대박 mean?", "in-5"))
+    await bot.handle_turn(PHONE, message("and 헐?", "in-6"))
+
+    assert [m["text"] for m in sent] == ["대박 means awesome.", "헐 means whoa."]
+    assert store.get_user(PHONE)["mode"] == "explain"
+    assert "RIGHT NOW" not in model.calls[0]["system"]
+    assert "RIGHT NOW" in model.calls[1]["system"]
+
+
+async def test_a_normal_message_goes_back_in_character(sent, model, chatting):
+    store.set_mode(PHONE, "explain")
+    model.replies = [chat_reply("ㅋㅋ 그래서 무슨 영화 봤어?")]
+
+    await bot.handle_turn(PHONE, message("ok got it", "in-5"))
+
+    assert [m["text"] for m in sent] == ["ㅋㅋ 그래서 무슨 영화 봤어?"]
+    assert store.get_user(PHONE)["mode"] == "chat"
