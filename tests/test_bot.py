@@ -756,6 +756,51 @@ async def test_help_during_onboarding_is_read_as_an_answer(sent, model):
     assert [m["text"] for m in sent] == [prompts.ask_missing(list(store.PROFILE_FIELDS))]
 
 
+# --- Changing style in the middle of a chat ---
+
+
+async def test_the_style_command_switches_style_without_the_model(sent, model, chatting):
+    await bot.handle_turn(PHONE, message("/style business"))
+
+    assert store.get_user(PHONE)["style"] == "business"
+    assert [m["text"] for m in sent] == ["Okay, business style from now on"]
+    assert model.calls == []
+
+
+async def test_the_style_command_with_an_unknown_style_shows_the_choices(sent, model, chatting):
+    await bot.handle_turn(PHONE, message("/style pirate"))
+
+    assert store.get_user(PHONE)["style"] == "casual"
+    assert [m["text"] for m in sent] == [prompts.STYLE_HELP]
+
+
+async def test_asking_for_another_style_switches_and_replies_in_it(sent, model, chatting):
+    model.replies = [
+        {**chat_reply("ㅇㅋ"), "style": "business"},
+        chat_reply("네, 알겠습니다. 오늘 하루 어떠셨어요?"),
+    ]
+
+    await bot.handle_turn(PHONE, message("can you talk to me more formally?", "in-5"))
+
+    assert store.get_user(PHONE)["style"] == "business"
+    assert [m["text"] for m in sent] == [
+        "Okay, business style from now on",
+        "네, 알겠습니다. 오늘 하루 어떠셨어요?",
+    ]
+    assert "Use polite speech in every message" in model.calls[1]["system"]
+    assert "you have just switched to business style" in model.calls[1]["user"]
+
+
+async def test_the_current_style_or_a_made_up_one_changes_nothing(sent, model, chatting):
+    model.replies = [{**chat_reply("오 좋았겠다!"), "style": "casual"}]
+    await bot.handle_turn(PHONE, message("친구 만났어", "in-5"))
+    model.replies = [{**chat_reply("ㅋㅋ 뭐래"), "style": "pirate"}]
+    await bot.handle_turn(PHONE, message("ㅋㅋ", "in-6"))
+
+    assert store.get_user(PHONE)["style"] == "casual"
+    assert [m["text"] for m in sent] == ["오 좋았겠다!", "ㅋㅋ 뭐래"]
+
+
 # --- Answers in the wrong language ---
 
 KOREAN_ANSWER = "오늘 하루가 많이 힘들었구나, 푹 쉬어.\n토닥토닥 = 등을 가볍게 두드리다"

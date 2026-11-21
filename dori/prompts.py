@@ -48,6 +48,22 @@ def ask_missing(missing: list[str], comment: str = "") -> str:
     return f"Thanks! I still need:\n{lines}"
 
 
+STYLE_HELP = "Pick a style like this: /style casual (or friendly, romantic, business)"
+
+
+def style_changed(style: str) -> str:
+    """Confirmation sent when the user switches style in the middle of a chat."""
+    return f"Okay, {style} style from now on"
+
+
+def style_switch_note(style: str) -> str:
+    """Added to a chat prompt right after a style switch, to get the next reply in it."""
+    return (
+        f"\n\nThey asked you to change how you text, and you have just switched to {style} "
+        'style. Reply to them in that style and carry the conversation on. Leave "style" as null.'
+    )
+
+
 # --- Onboarding ---
 
 ONBOARDING_EXTRACT = """You fill in a sign-up form from a text message. You never chat or answer the message.
@@ -185,7 +201,7 @@ Look at the {target} in their new message.
 
 OUTPUT
 Return ONLY one JSON object. No code fence, no text before or after it.
-{{"intent": "chat" or "question", "correction": string or null, "explanation": string or null, "reply": string}}
+{{"intent": "chat" or "question", "correction": string or null, "explanation": string or null, "reply": string, "style": string or null}}
 
 When the intent is "chat":
 - "correction": their whole message rewritten in {target} with the fixes applied, or null when nothing needs fixing.
@@ -196,6 +212,8 @@ When the intent is "question":
 - "correction": null
 - "explanation": your answer in {native}, out of character, short enough for a text (2 to 4 lines). Give the meaning first, then anything useful about tone, slang or culture. Write {target} words in their own script, and never follow one with its romanization in brackets. Answer only what they asked: do not comment on their question, translate it, or show how to ask it in {target}.
 - "reply": ""
+
+"style" is null in almost every answer. Set it only when they clearly ask you to change the way you text them, for example "can you be more formal?" or "talk to me like a friend". Then it is the closest of "casual", "friendly", "romantic" and "business", and the intent is "chat".
 
 Use plain text in every field: no markdown, no asterisks, no bullet characters, no dashes. Do not romanize {target} unless they ask how something is pronounced.
 Whatever you write in {native} should sound like a friend texting, not a textbook or a chatbot: short plain sentences, contractions, no period at the end of the last line, no praise for the question and no summary at the end."""

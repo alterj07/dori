@@ -109,6 +109,10 @@ async def handle_turn(phone: str, event: Event) -> None:
         await _onboard(phone, user, text, event.message_id)
         return
 
+    if command.startswith("/style"):
+        await _style_command(phone, text, event.message_id)
+        return
+
     if command == "help":
         store.add_message(phone, "user", text, kind="system", loop_id=event.message_id)
         await say(phone, prompts.tips(user), kind="system")
@@ -328,6 +332,31 @@ def _in_character_lines(user: dict[str, Any], reply: str) -> str:
     return "\n".join(kept)
 
 
+async def _style_command(phone: str, text: str, message_id: str | None) -> None:
+    """``/style business`` changes how Dori texts, without asking the model."""
+    store.add_message(phone, "user", text, kind="system", loop_id=message_id)
+    wanted = text.lower().replace("/style", "", 1).strip(" .!?:")
+    if wanted not in prompts.STYLES:
+        await say(phone, prompts.STYLE_HELP, kind="system")
+        return
+    store.save_user(phone, style=wanted)
+    await say(phone, prompts.style_changed(wanted), kind="system")
+
+
+async def _switch_style(phone: str, style: str, content: str) -> None:
+    """Change style because the user asked for it in their own words, then carry on in it."""
+    user = store.save_user(phone, style=style)
+    await say(phone, prompts.style_changed(style), kind="system")
+    data = await llm.chat_json(
+        prompts.chat_system(user),
+        [{"role": "user", "content": content + prompts.style_switch_note(style)}],
+    )
+    reply = _in_character_lines(user, _texted(data.get("reply")))
+    if reply:
+        await say_bubbles(phone, reply)
+    store.set_mode(phone, "chat")
+
+
 def _nothing_to_send(data: dict[str, Any]) -> bool:
     """True when the model's answer has no text in the field that would be sent."""
     reply = _texted(data.get("reply"))
@@ -364,6 +393,11 @@ async def _chat(
         log.warning("the model left its answer empty; asking again")
         retry = content + prompts.EMPTY_ANSWER_NOTE
         data = await llm.chat_json(system, [{"role": "user", "content": retry}])
+    wanted = _text(data.get("style")).lower()
+    if wanted in prompts.STYLES and wanted != user["style"]:
+        await _switch_style(phone, wanted, content)
+        return
+
     correction = _texted(data.get("correction"))
     explanation = _texted(data.get("explanation"))
     reply = _texted(data.get("reply"))
