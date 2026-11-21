@@ -65,9 +65,11 @@ class Dispatcher:
         loop = asyncio.get_running_loop()
         self._timers[phone] = loop.call_later(config.DEBOUNCE_S, self._on_timer, phone)
 
-    def add_reaction(self, phone: str, message_id: str | None, reaction: str) -> None:
+    def add_reaction(
+        self, phone: str, message_id: str | None, reaction: str, text: str = ""
+    ) -> None:
         """Start a reaction turn right away, skipping the debounce."""
-        event = Event(kind="reaction", message_id=message_id, reaction=reaction)
+        event = Event(kind="reaction", text=text, message_id=message_id, reaction=reaction)
         self.spawn(self._run_event(phone, event))
 
     def spawn(self, coro: Coroutine[Any, Any, Any]) -> None:
@@ -169,7 +171,8 @@ def route(payload: dict[str, Any]) -> str:
     if event == "message_reaction":
         reaction = payload.get("reaction")
         if reaction == "question":
-            dispatcher.add_reaction(phone, message_id, reaction)
+            text = (payload.get("text") or "").strip()
+            dispatcher.add_reaction(phone, message_id, reaction, text)
             return "dispatched"
         return f"logged: reaction {reaction}"
 

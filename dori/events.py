@@ -16,6 +16,7 @@ class Event:
 
     kind "reaction": ``message_id`` is the id of the message the user reacted
     to and ``reaction`` is the tapback name. Only "question" reaches the bot.
+    ``text`` is whatever text LoopMessage sent along with the reaction.
     """
 
     kind: Literal["message", "reaction"]
