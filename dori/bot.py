@@ -63,6 +63,14 @@ def _text(value: Any) -> str:
 async def handle_turn(phone: str, event: Event) -> None:
     """Handle one turn. The first matching case wins."""
     text = event.text.strip()
+    command = text.lower().strip(" .!?")
+
+    if event.kind == "message" and command == "/reset":
+        # Nothing is stored here: the user and their history are gone.
+        store.reset_user(phone)
+        await loop_client.send(phone, prompts.RESET_DONE)
+        return
+
     user = store.get_user(phone)
 
     if event.kind == "reaction":

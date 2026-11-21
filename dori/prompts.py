@@ -24,6 +24,8 @@ TIPS = """Quick tips:
 • When you're ready to keep chatting, just reply in Korean
 • Text "help" anytime to see this again"""
 
+RESET_DONE = "All cleared 🪨 Text me anything and we'll start fresh."
+
 _ASK = {
     "name": "your name",
     "native": "your native language",
