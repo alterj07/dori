@@ -35,7 +35,7 @@ Dori:  Translation: Oh wow lol Where did you go? What did you order?
        Tone: upbeat and curious, typical close-friend texting style
 ```
 
-You can also just ask, in English or in Korean: "what does 대박 mean?" Dori answers in English and leaves the story where it was. It then stays out of character, so you can ask follow-up questions without the chat cutting in. When you send a normal message again, such as a reply in Korean or "ok got it", Dori picks the conversation back up.
+You can also just ask, in English or in Korean: "what does 대박 mean?" Dori answers in English and leaves the story where it was. A vague question works too. Reply inline to any message with "what's that?" and Dori explains that message. Without an inline reply, it explains the latest Korean one. Dori treats you as fluent in your own language, so it never explains or corrects your English. It then stays out of character, so you can ask follow-up questions without the chat cutting in. When you send a normal message again, such as a reply in Korean or "ok got it", Dori picks the conversation back up.
 
 There are two commands. `help` resends the quick tips that Dori sends at the end of onboarding. `/reset` deletes your profile and your history, and your next text starts onboarding again.
 
@@ -57,7 +57,7 @@ LoopMessage delivers each text and tapback as a webhook, and it retries up to 30
 4. It adds the text to that sender's buffer and waits for 3 quiet seconds, so three short texts in a row become one turn.
 5. It runs the turn. Turns for the same person run one at a time, and different people don't wait for each other.
 
-A ❓ tapback skips the wait in step 4. Every message Dori sends is stored with its LoopMessage id, which is how a tapback is matched to the message it landed on.
+A ❓ tapback skips the wait in step 4. Every message is stored with its LoopMessage id, which is how a tapback or an inline reply is matched to the message it points at.
 
 When a text arrives, the server also asks LoopMessage to mark it as read and show a typing bubble while the reply is prepared. If a turn crashes, the user gets "Sorry, can you say that again? 🙏" and the traceback goes to the log.
 
@@ -67,7 +67,7 @@ Each chat turn is a single call to NVIDIA Nemotron 3 Ultra. The prompt carries t
 
 Ultra is the only Nemotron model that lists Korean as supported. `scripts/eval_prompts.py` runs the chat prompt over 26 learner messages and checks whether each one gets fixed, left alone or treated as a question. In the last run Ultra matched 25 of them. The much faster Nemotron 3.5 Lightning matched 21 of 24 on an earlier version of the set, but several of its fixes were wrong. It changed 만났어요 to 만났고, for example, where the right fix is 만났어.
 
-Lightning is still the fallback. If Ultra errors, returns a 429 or takes longer than 10 seconds, the call is retried once on Lightning and the log records why. The JSON is parsed leniently: code fences, stray text around the object and a cut-off object are all handled. If the model answers in plain prose, that text goes out as an ordinary reply.
+Lightning is still the fallback. If Ultra errors, returns a 429 or takes longer than 10 seconds, the call is retried once on Lightning and the log records why. The JSON is parsed leniently: code fences, stray text around the object and a cut-off object are all handled. If the model answers in plain prose, that text goes out as an ordinary reply. If an explanation comes back mostly in Korean, the bot asks once more for it in the user's language.
 
 ## Limits
 
