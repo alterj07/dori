@@ -249,7 +249,8 @@ def test_business_english_allows_lowercase_but_not_shortcuts():
 
     assert "It is still a text, not an email" in system
     assert "none of these is an error, even at work" in system
-    assert "do not fit a business chat" in system
+    assert "a casual register is an error here" in system
+    assert "too casual for a business chat" in system
 
 
 def test_out_of_character_writing_is_told_to_sound_like_a_text():

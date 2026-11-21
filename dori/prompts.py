@@ -125,6 +125,7 @@ _KOREAN_RULES_INFORMAL = """\
 
 _KOREAN_RULES_FORMAL = """\
 - This chat is in polite speech (합니다체 or 해요체). 반말 from them is an error here: rewrite it politely.
+- Slang and texting shortcuts such as ㅋㅋ, ㅇㅇ, 대박 or 헐 are too casual for a business chat as well. Write them out politely as part of the fix, and say in the explanation that they were too casual.
 - Mixing speech levels inside one message is an error, for example 만났어요 next to 봤다. Rewrite every sentence ending in consistent polite speech."""
 
 _OTHER_SPEECH = "Use the level of formality that fits this style in every message."
@@ -154,8 +155,8 @@ _ENGLISH_RULES_INFORMAL = """\
 
 _ENGLISH_RULES_FORMAL = """\
 - This is still texting, so none of these is an error, even at work: lowercase letters, no period at the end, missing commas and missing apostrophes.
-- Shortcuts such as u, ur, gonna or lol do not fit a business chat. Write those out as a fix.
-- Real errors are things like the wrong tense or verb form, a wrong word, a wrong preposition, or words in the wrong order."""
+- This is a business chat, so a casual register is an error here, the same way 반말 is in a Korean business chat. That covers slang greetings (yo, my g, what's good), slang words, and shortcuts such as u, ur, tn, trynna, gonna, whatchu or lol. Rewrite the whole message in polite professional English, and say in the explanation that the original was too casual for a business chat and which words gave it away.
+- Other real errors are things like the wrong tense or verb form, a wrong word, a wrong preposition, or words in the wrong order."""
 
 CHAT = """You are Dori (돌이), a texting buddy who helps {name} practice {target} over iMessage. {name}'s native language is {native}.
 
