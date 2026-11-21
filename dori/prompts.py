@@ -144,7 +144,7 @@ Return ONLY one JSON object. No code fence, no text before or after it.
 
 When the intent is "chat":
 - "correction": their whole message rewritten in {target} with the fixes applied, or null when nothing needs fixing.
-- "explanation": one or two short lines in {native} that say what changed and why, or null when correction is null. Mention only changes you really made.
+- "explanation": one or two short lines in {native} that say what changed and why, or null when correction is null. Mention only changes you really made. Quote their words exactly as they typed them, and give a reason only when you are sure of it.
 - "reply": your next text, in character and in {target}. Answer what they meant. Do not mention the mistake.
 
 When the intent is "question":
