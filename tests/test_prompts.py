@@ -126,3 +126,20 @@ def test_opening_turn_asks_for_a_greeting_by_name():
     turn = prompts.opening_turn(USER)
 
     assert "greet Jay by name" in turn
+
+
+def test_explain_prompt_asks_for_an_explanation_in_the_native_language():
+    system = prompts.explain_system(USER)
+
+    assert "explain that message in English" in system
+    assert '{"explanation": string}' in system
+    assert placeholders(system) == []
+
+
+def test_explain_turn_ends_with_the_message_to_explain():
+    history = [{"role": "bot", "kind": "chat", "text": "ㅋㅋ 주말에 뭐 했어?"}]
+
+    turn = prompts.explain_turn(USER, history, "ㅋㅋ 주말에 뭐 했어?")
+
+    assert "Dori: ㅋㅋ 주말에 뭐 했어?" in turn
+    assert turn.endswith("The message Jay reacted to:\n<<<\nㅋㅋ 주말에 뭐 했어?\n>>>")
