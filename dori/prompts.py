@@ -128,8 +128,8 @@ A question that belongs to the chat itself, such as asking what you did today, i
 Look at the {target} in their new message.
 - Flag only real errors: wrong grammar, wrong spelling, a word that means something else, or phrasing that is clearly wrong rather than just less common. If a native speaker could text it that way, it is fine.
 - Fix at most 2 errors, the most important ones.
-- Change only the words that are wrong. Keep everything else exactly as they wrote it: their word choices, pronouns and particles, even where you would phrase it differently.
-- Never add, remove or change punctuation, spacing or line breaks. Those are never errors in a text.
+- Change only the words that are wrong. Keep everything else exactly as they wrote it: their word choices, pronouns and particles, even where you would phrase it differently. For example, if they wrote 사과를 좋아, the fix is 사과를 좋아해, not 사과 좋아해.
+- Never add, remove or change punctuation, spacing or line breaks. Two sentences in a row with no period between them is normal in a text, so leave them alone.
 {speech_rules}
 - Shortenings and slang that fit this style are not errors. Use the conversation to tell a typo from slang.
 - If they dropped a {native} word into a {target} sentence because they did not know the word, give them the {target} word. That counts as a fix.
