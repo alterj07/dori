@@ -62,11 +62,14 @@ def _text(value: Any) -> str:
 
 async def handle_turn(phone: str, event: Event) -> None:
     """Handle one turn. The first matching case wins."""
-    if event.kind != "message":
-        return  # reactions are not handled yet
-
     text = event.text.strip()
     user = store.get_user(phone)
+
+    if event.kind == "reaction":
+        # A ❓ only means something once there is a conversation to explain.
+        if user is not None and user["mode"] != "onboarding":
+            await _explain(phone, user, event)
+        return
 
     if user is None:
         store.save_user(phone, mode="onboarding")
@@ -186,3 +189,50 @@ async def _chat(phone: str, user: dict[str, Any], text: str, message_id: str | N
     if not reply and not corrected:
         raise BotError("the model gave no reply")
     await say_bubbles(phone, reply)
+
+
+# --- ❓ reactions ---
+
+
+def _reaction_target(phone: str, event: Event) -> dict[str, Any] | None:
+    """Work out which of Dori's messages a ❓ landed on.
+
+    Normally the reaction carries that message's id. If the id is not one we
+    stored, fall back to matching the text that came with the reaction, and
+    then to Dori's most recent message, which is the one people usually mean.
+    """
+    if event.message_id:
+        found = store.find_by_loop_id(phone, event.message_id)
+        if found is not None:
+            return found if found["role"] == "bot" else None
+
+    from_dori = [message for message in _history(phone) if message["role"] == "bot"]
+    quoted = event.text.strip()
+    if quoted:
+        for message in reversed(from_dori):
+            if message["text"].strip() == quoted:
+                return message
+    return from_dori[-1] if from_dori else None
+
+
+async def _explain(phone: str, user: dict[str, Any], event: Event) -> None:
+    """Explain the message a ❓ landed on, as an inline reply to it."""
+    target = _reaction_target(phone, event)
+    if target is None:
+        log.info("ignored a question reaction that points at none of Dori's messages")
+        return
+
+    data = await llm.chat_json(
+        prompts.explain_system(user),
+        [
+            {
+                "role": "user",
+                "content": prompts.explain_turn(user, _history(phone), target["text"]),
+            }
+        ],
+    )
+    explanation = _text(data.get("explanation")) or _text(data.get("reply"))
+    if not explanation:
+        raise BotError("the model gave no explanation")
+    await say(phone, explanation, kind="explanation", reply_to=target["loop_id"])
+    store.set_mode(phone, "explain")
