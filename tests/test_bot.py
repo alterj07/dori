@@ -136,6 +136,44 @@ async def test_fields_that_are_already_known_are_not_overwritten(sent, model):
     assert user["style"] == "casual"
 
 
+async def test_two_languages_in_a_bare_list_are_read_in_the_order_asked(sent, model):
+    store.save_user(PHONE)
+    model.replies = [
+        {
+            "name": "현",
+            "native": "Korean",
+            "target": "English",
+            "level_desc": "its alr",
+            "style": "business",
+        },
+        chat_reply("현 님, 안녕하세요!"),
+    ]
+
+    await bot.handle_turn(PHONE, message("현 english korean (its alr) business"))
+
+    user = store.get_user(PHONE)
+    assert (user["native"], user["target"]) == ("English", "Korean")
+
+
+async def test_languages_the_user_labelled_are_left_as_the_model_read_them(sent, model):
+    store.save_user(PHONE)
+    model.replies = [
+        {
+            "name": "Min",
+            "native": "Korean",
+            "target": "English",
+            "level_desc": "ok",
+            "style": "casual",
+        },
+        chat_reply("Hi Min!"),
+    ]
+
+    await bot.handle_turn(PHONE, message("Min. I want to learn English, I speak Korean. ok. casual"))
+
+    user = store.get_user(PHONE)
+    assert (user["native"], user["target"]) == ("Korean", "English")
+
+
 async def test_an_answer_the_model_cannot_read_asks_for_everything_again(sent, model):
     store.save_user(PHONE)
     model.replies = [chat_reply("I am not sure what you mean")]
