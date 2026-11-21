@@ -48,6 +48,7 @@ LLM_MAX_TOKENS = 500
 # --- Bot behaviour ---
 DEBOUNCE_S = 3.0  # quiet time before a burst of texts becomes one turn
 BUBBLE_GAP_S = 0.4  # pause between the texts of one reply, so they arrive in order
+HISTORY_LIMIT = 20  # messages of context sent to the model
 
 # --- Local files ---
 DB_PATH = ROOT / "dori.db"

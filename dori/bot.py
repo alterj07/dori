@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import re
 from typing import Any
 
 from dori import config, llm, loop_client, prompts, store
@@ -77,6 +78,8 @@ async def handle_turn(phone: str, event: Event) -> None:
         await _onboard(phone, user, text, event.message_id)
         return
 
+    await _chat(phone, user, text, event.message_id)
+
 
 # --- Onboarding ---
 
@@ -132,4 +135,54 @@ async def _open_conversation(phone: str, user: dict[str, Any]) -> None:
     reply = _text(data.get("reply"))
     if not reply:
         raise BotError("the model gave no opening message")
+    await say_bubbles(phone, reply)
+
+
+# --- Chat ---
+
+_SPACING_AND_PUNCTUATION = re.compile(r"[\s.,!?~…]+")
+
+
+def _same(first: str, second: str) -> bool:
+    """True when two texts differ only in spacing and punctuation."""
+    return _SPACING_AND_PUNCTUATION.sub("", first) == _SPACING_AND_PUNCTUATION.sub("", second)
+
+
+def _history(phone: str) -> list[dict[str, Any]]:
+    """Recent conversation for the model, without onboarding and help messages."""
+    recent = store.recent(phone, config.HISTORY_LIMIT)
+    return [message for message in recent if message["kind"] != "system"]
+
+
+async def _chat(phone: str, user: dict[str, Any], text: str, message_id: str | None) -> None:
+    """One chat turn, from a single model call.
+
+    If the user's message has a real error, Dori first replies inline to that
+    message with the fix, then carries on the conversation. If the user asked
+    a question about the language, Dori answers it instead.
+    """
+    history = _history(phone)
+    store.add_message(phone, "user", text, loop_id=message_id)
+
+    data = await llm.chat_json(
+        prompts.chat_system(user),
+        [{"role": "user", "content": prompts.chat_turn(user, history, text)}],
+    )
+    correction = _text(data.get("correction"))
+    explanation = _text(data.get("explanation"))
+    reply = _text(data.get("reply"))
+
+    if data.get("intent") == "question":
+        answer = explanation or reply
+        if not answer:
+            raise BotError("the model gave no answer to the question")
+        await say(phone, answer, kind="explanation")
+        return
+
+    corrected = bool(correction) and not _same(correction, text)
+    if corrected:
+        fix = f"✏️ {correction}\n💬 {explanation}" if explanation else f"✏️ {correction}"
+        await say(phone, fix, kind="correction", reply_to=message_id)
+    if not reply and not corrected:
+        raise BotError("the model gave no reply")
     await say_bubbles(phone, reply)
