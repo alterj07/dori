@@ -1,0 +1,27 @@
+# Secrets and local planning notes
+.env
+.env.*
+!.env.example
+PLAN.md
+
+# Runtime state
+dori.db
+dori.db-journal
+dori.db-wal
+dori.db-shm
+logs/
+
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+*.egg-info/
+build/
+dist/
+
+# Editors, tools and OS
+.claude/
+.vscode/
+.idea/
+.DS_Store
