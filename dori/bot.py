@@ -121,6 +121,7 @@ async def _onboard(phone: str, user: dict[str, Any], text: str, message_id: str 
         [{"role": "user", "content": text}],
     )
     updates = _profile_updates(data, missing)
+    _keep_asked_order(text, updates)
     if updates:
         user = store.save_user(phone, **updates)
 
@@ -146,6 +147,30 @@ def _profile_updates(data: dict[str, Any], missing: list[str]) -> dict[str, str]
         if value:
             updates[field] = value
     return updates
+
+
+_SAYS_WHICH_LANGUAGE = re.compile(
+    r"\b(native|mother|first|speak|speaks|learn|learning|practice|practise|practicing|"
+    r"study|studying|want|wants|target|improve)\b",
+    re.IGNORECASE,
+)
+
+
+def _keep_asked_order(text: str, updates: dict[str, str]) -> None:
+    """Undo a native/target mix-up when both languages came as a bare list.
+
+    The welcome asks for the native language first, so "english korean" means
+    an English speaker practicing Korean. The model sometimes reads it the
+    other way round. If the message says which is which, it is left alone.
+    """
+    native, target = updates.get("native"), updates.get("target")
+    if not native or not target or _SAYS_WHICH_LANGUAGE.search(text):
+        return
+    lowered = text.lower()
+    native_at, target_at = lowered.find(native.lower()), lowered.find(target.lower())
+    if native_at == -1 or target_at == -1 or native_at < target_at:
+        return
+    updates["native"], updates["target"] = target, native
 
 
 async def _open_conversation(phone: str, user: dict[str, Any]) -> None:
