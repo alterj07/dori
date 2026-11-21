@@ -142,7 +142,21 @@ def test_explain_turn_ends_with_the_message_to_explain():
     turn = prompts.explain_turn(USER, history, "ㅋㅋ 주말에 뭐 했어?")
 
     assert "Dori: ㅋㅋ 주말에 뭐 했어?" in turn
-    assert turn.endswith("The message Jay reacted to:\n<<<\nㅋㅋ 주말에 뭐 했어?\n>>>")
+    assert turn.endswith(
+        "The message Jay reacted to (one of your texts in Korean):\n<<<\nㅋㅋ 주말에 뭐 했어?\n>>>"
+    )
+
+
+def test_explain_turn_says_when_the_message_is_a_correction():
+    turn = prompts.explain_turn(USER, [], "✏️ 친구 만났어\n💬 Keep one speech level.", "correction")
+
+    assert "The message Jay reacted to (one of your corrections):" in turn
+
+
+def test_explain_prompt_asks_for_line_breaks_inside_the_json_string():
+    system = prompts.explain_system(USER)
+
+    assert "separated by \\n inside the JSON string" in system
 
 
 def test_explain_mode_adds_a_note_about_follow_up_questions():

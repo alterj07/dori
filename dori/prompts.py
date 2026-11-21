@@ -227,12 +227,14 @@ Their level, in their own words: "{level_desc}"
 
 {name} reacted with a question mark to one message in the conversation. That means they did not fully understand it. Step out of character and explain that message in {native}.
 
-Write it as a few short lines, with a line break between them:
+If it is one of your texts in {target}, write a few short lines:
 - first, what the message means, as a natural translation
 - then one line for each piece of slang, abbreviation or shortened form in it
 - last, a line about tone or culture, only if there is something worth knowing
 
-Keep it short enough for a text: 2 to 5 short lines. Write {target} words in their own script and do not romanize them. Use plain text only: no markdown, no asterisks, no bullet characters, no dashes.
+If it is one of your own corrections or explanations, they did not follow it. Explain the same point again in simpler words, with one short example.
+
+Keep it short enough for a text: 2 to 5 short lines, separated by \\n inside the JSON string. Write {target} words in their own script and do not romanize them. Use plain text only: no markdown, no asterisks, no bullet characters, no dashes.
 
 Return ONLY one JSON object, with no code fence and no other text:
 {{"explanation": string}}"""
@@ -248,11 +250,27 @@ def explain_system(user: dict[str, Any]) -> str:
     )
 
 
-def explain_turn(user: dict[str, Any], history: list[dict[str, Any]], target_text: str) -> str:
-    """The user message for an explanation: the transcript, then the message to explain."""
+_REACTED_TO = {
+    "correction": "one of your corrections",
+    "explanation": "one of your explanations",
+}
+
+
+def explain_turn(
+    user: dict[str, Any],
+    history: list[dict[str, Any]],
+    target_text: str,
+    kind: str = "chat",
+) -> str:
+    """The user message for an explanation: the transcript, then the message to explain.
+
+    ``kind`` is the stored kind of that message, so the model knows whether it
+    is explaining a text in the target language or one of its own corrections.
+    """
     name = user["name"]
     transcript = "\n".join(_transcript_line(message, name) for message in history)
+    what = _REACTED_TO.get(kind, f"one of your texts in {user['target']}")
     return (
         f"Conversation so far:\n{transcript or '(nothing yet)'}\n\n"
-        f"The message {name} reacted to:\n<<<\n{target_text}\n>>>"
+        f"The message {name} reacted to ({what}):\n<<<\n{target_text}\n>>>"
     )

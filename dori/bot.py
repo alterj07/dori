@@ -265,7 +265,9 @@ async def _explain(phone: str, user: dict[str, Any], event: Event) -> None:
         [
             {
                 "role": "user",
-                "content": prompts.explain_turn(user, _history(phone), target["text"]),
+                "content": prompts.explain_turn(
+                    user, _history(phone), target["text"], target["kind"]
+                ),
             }
         ],
     )
