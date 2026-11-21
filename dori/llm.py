@@ -126,19 +126,42 @@ def _describe(exc: Exception) -> str:
     return repr(exc)[:200]
 
 
-async def complete(system: str, messages: list[dict[str, str]]) -> Completion:
-    """Ask Ultra. On any error, a 429 or a timeout, ask Lightning once instead.
+async def _ask_primary(system: str, messages: list[dict[str, str]], waited: list[float]) -> str:
+    """Ask Ultra, waiting and asking again while it answers 429.
 
-    If Lightning fails too, its exception propagates to the caller.
+    NVIDIA rate-limits this model hard, and a refusal is usually gone a second
+    or two later. Each wait is appended to ``waited`` for the log.
+    """
+    for wait in (*config.RATE_LIMIT_WAITS_S, None):
+        try:
+            return await _call(config.PRIMARY_MODEL, system, messages)
+        except httpx.HTTPStatusError as exc:
+            if exc.response.status_code != 429 or wait is None:
+                raise
+            log.info("ultra is rate limited; asking again in %.1fs", wait)
+            waited.append(wait)
+            await asyncio.sleep(wait)
+    raise AssertionError("unreachable")
+
+
+async def complete(system: str, messages: list[dict[str, str]]) -> Completion:
+    """Ask Ultra. If it errors, stays rate limited or takes too long, ask Lightning once.
+
+    A 429 from Ultra is retried a few times first, inside the same time limit,
+    because Lightning's corrections are much worse. If Lightning fails too, its
+    exception propagates to the caller.
     """
     started = time.perf_counter()
     model = config.PRIMARY_MODEL
     reason: str | None = None
+    waited: list[float] = []
     try:
         async with asyncio.timeout(config.LLM_TIMEOUT_S):
-            text = await _call(model, system, messages)
+            text = await _ask_primary(system, messages, waited)
     except Exception as exc:
         reason = _describe(exc)
+        if waited:
+            reason += f" after {len(waited)} rate-limit waits"
         model = config.FALLBACK_MODEL
         log.warning("FALLBACK to %s: %s", model, reason)
         async with asyncio.timeout(config.LLM_TIMEOUT_S):
@@ -166,15 +189,18 @@ async def chat_json(system: str, messages: list[dict[str, str]]) -> dict[str, An
 
     If the model answers in plain prose instead, that text comes back as an
     ordinary in-character reply. Broken JSON that cannot be recovered raises
-    ``LLMError`` rather than being shown to the user.
+    ``LLMError`` rather than being shown to the user. When the fallback model
+    answered, the dict also carries ``"_fallback": True``.
     """
     completion = await complete(system, messages)
     data = parse_json(completion.text)
-    if data is not None:
-        return data
-
-    raw = completion.text.strip()
-    if raw.startswith(("{", "```")):
-        raise LLMError("the model returned JSON that could not be read")
-    log.warning("the model did not return JSON; using its text as the reply")
-    return {"intent": "chat", "correction": None, "explanation": None, "reply": raw}
+    if data is None:
+        raw = completion.text.strip()
+        if raw.startswith(("{", "```")):
+            raise LLMError("the model returned JSON that could not be read")
+        log.warning("the model did not return JSON; using its text as the reply")
+        data = {"intent": "chat", "correction": None, "explanation": None, "reply": raw}
+    if completion.fallback:
+        # Callers trust the fallback model less, so tell them who answered.
+        data["_fallback"] = True
+    return data

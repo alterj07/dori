@@ -118,6 +118,55 @@ async def test_an_error_from_ultra_falls_back_to_lightning_once(monkeypatch, sta
     assert completion.fallback_reason == f"HTTP {status}"
 
 
+async def test_a_rate_limited_ultra_is_asked_again_before_falling_back(monkeypatch):
+    monkeypatch.setattr(config, "RATE_LIMIT_WAITS_S", (0.01, 0.01))
+    models = []
+
+    def handler(request):
+        models.append(json.loads(request.content)["model"])
+        if len(models) < 3:
+            return httpx.Response(429, json={"detail": "slow down"})
+        return answer('{"reply": "from ultra"}')
+
+    use_handler(monkeypatch, handler)
+
+    completion = await llm.complete(SYSTEM, MESSAGES)
+
+    assert models == [config.PRIMARY_MODEL] * 3
+    assert completion.model == config.PRIMARY_MODEL
+    assert completion.fallback is False
+
+
+async def test_an_ultra_that_stays_rate_limited_falls_back_and_says_so(monkeypatch):
+    monkeypatch.setattr(config, "RATE_LIMIT_WAITS_S", (0.01, 0.01))
+    models, handler = ultra_fails_with(lambda: httpx.Response(429, json={}))
+    use_handler(monkeypatch, handler)
+
+    completion = await llm.complete(SYSTEM, MESSAGES)
+
+    assert models == [config.PRIMARY_MODEL] * 3 + [config.FALLBACK_MODEL]
+    assert completion.fallback_reason == "HTTP 429 after 2 rate-limit waits"
+
+
+async def test_other_errors_from_ultra_are_not_retried(monkeypatch):
+    monkeypatch.setattr(config, "RATE_LIMIT_WAITS_S", (0.01, 0.01))
+    models, handler = ultra_fails_with(lambda: httpx.Response(500, json={}))
+    use_handler(monkeypatch, handler)
+
+    await llm.complete(SYSTEM, MESSAGES)
+
+    assert models == [config.PRIMARY_MODEL, config.FALLBACK_MODEL]
+
+
+async def test_chat_json_says_when_the_fallback_model_answered(monkeypatch):
+    models, handler = ultra_fails_with(lambda: httpx.Response(500, json={}))
+    use_handler(monkeypatch, handler)
+
+    data = await llm.chat_json(SYSTEM, MESSAGES)
+
+    assert data == {"reply": "from lightning", "_fallback": True}
+
+
 async def test_an_empty_answer_from_ultra_falls_back(monkeypatch):
     models, handler = ultra_fails_with(lambda: answer("   "))
     use_handler(monkeypatch, handler)

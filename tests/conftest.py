@@ -12,6 +12,7 @@ def isolated(tmp_path, monkeypatch):
     monkeypatch.setattr(config, "DB_PATH", tmp_path / "dori.db")
     monkeypatch.setattr(config, "LOG_PATH", tmp_path / "logs" / "dori.jsonl")
     monkeypatch.setattr(config, "NVIDIA_API_KEY", "test-nvidia-key")
+    monkeypatch.setattr(config, "RATE_LIMIT_WAITS_S", ())  # no real waiting in tests
     monkeypatch.setattr(config, "LOOP_API_KEY", "test-loop-key")
     monkeypatch.setattr(config, "WEBHOOK_SECRET", "test-webhook-secret")
     monkeypatch.setattr(loop_client, "_client", None)

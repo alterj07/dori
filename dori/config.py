@@ -42,6 +42,9 @@ NVIDIA_CHAT_URL = "https://integrate.api.nvidia.com/v1/chat/completions"
 PRIMARY_MODEL = "nvidia/nemotron-3-ultra-550b-a55b"  # the only Nemotron that lists Korean
 FALLBACK_MODEL = "nvidia/nemotron-3.5-lightning-30b-a3b"  # fast, but misses corrections
 LLM_TIMEOUT_S = 10.0  # per attempt; past this the primary gives way to the fallback
+# NVIDIA often answers 429 for the primary model and accepts the same call a
+# moment later. Wait this long, in turn, before asking it again.
+RATE_LIMIT_WAITS_S = (1.0, 2.0, 3.0)
 LLM_TEMPERATURE = 0.6
 LLM_MAX_TOKENS = 500
 
