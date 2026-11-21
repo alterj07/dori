@@ -493,3 +493,27 @@ async def test_help_during_onboarding_is_read_as_an_answer(sent, model):
 
     assert len(model.calls) == 1
     assert [m["text"] for m in sent] == [prompts.ask_missing(list(store.PROFILE_FIELDS))]
+
+
+# --- Inline replies from the user ---
+
+
+async def test_an_inline_reply_shows_the_model_the_message_it_answers(sent, model, chatting):
+    store.add_message(PHONE, "user", "주문?", loop_id="in-4")
+    model.replies = [dict(QUESTION)]
+
+    event = Event(kind="message", text="whats that", message_id="in-5", in_reply_to="in-4")
+    await bot.handle_turn(PHONE, event)
+
+    prompt = model.calls[0]["user"]
+    assert prompt.endswith("inline reply to this earlier message from Jay:\n<<<\n주문?\n>>>")
+
+
+async def test_an_inline_reply_to_a_message_we_never_stored_is_a_normal_text(sent, model, chatting):
+    model.replies = [chat_reply("응!")]
+
+    event = Event(kind="message", text="ㅇㅋ", message_id="in-5", in_reply_to="never-stored")
+    await bot.handle_turn(PHONE, event)
+
+    assert "inline reply" not in model.calls[0]["user"]
+    assert [m["text"] for m in sent] == ["응!"]
