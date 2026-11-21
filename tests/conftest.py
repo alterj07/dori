@@ -3,7 +3,7 @@
 import httpx
 import pytest
 
-from dori import config, loop_client, store
+from dori import config, llm, loop_client, store
 
 
 @pytest.fixture(autouse=True)
@@ -15,6 +15,7 @@ def isolated(tmp_path, monkeypatch):
     monkeypatch.setattr(config, "LOOP_API_KEY", "test-loop-key")
     monkeypatch.setattr(config, "WEBHOOK_SECRET", "test-webhook-secret")
     monkeypatch.setattr(loop_client, "_client", None)
+    monkeypatch.setattr(llm, "_client", None)
     store.close()
     yield
     store.close()
@@ -22,7 +23,7 @@ def isolated(tmp_path, monkeypatch):
 
 @pytest.fixture(autouse=True)
 def no_real_network(monkeypatch):
-    """Fail loudly if a test would reach LoopMessage or any other real host."""
+    """Fail loudly if a test would reach LoopMessage, NVIDIA or any other real host."""
 
     async def refuse(self, request):
         raise AssertionError(f"test tried a real network call: {request.method} {request.url}")
