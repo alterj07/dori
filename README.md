@@ -2,8 +2,6 @@
 
 Dori is a Korean practice buddy that lives in iMessage. You text it the way you would text a friend, and it texts back in Korean. It was built at tidalBYTE '26 for older learners and immigrants who find apps like Duolingo overwhelming but already know how to send a text.
 
-Status: onboarding, chat with inline corrections and answers to language questions all work. Explanations for a ❓ reaction, explain mode and the `help` and `/reset` commands come next.
-
 ## What it does
 
 You text first. Dori answers with a welcome that asks for your name, your native language, the language you want to practice, your level in your own words, and a style: casual, friendly, romantic or business. You can answer in one free-form message. The model pulls the fields out of it, and the code decides what is still missing and asks only for that.
@@ -22,7 +20,11 @@ Dori:  오 누구랑? ㅋㅋ 무슨 영화 봤어?
 
 Dori fixes at most two errors per message. Slang and shortenings that fit the style (ㅋㅋ, 대박, dropped particles in casual speech) are left alone. Mixing speech levels in one message counts as a mistake in every style, and 반말 counts as one only in business style.
 
-If you ask about the language, for example "what does 대박 mean?", Dori answers in English and leaves the story where it was.
+If you don't understand one of Dori's messages, react to it with the question mark tapback. Dori replies inline to that message and explains it in English: what it means, the slang in it and any cultural context.
+
+You can also just ask, in English or in Korean: "what does 대박 mean?" Dori answers in English and leaves the story where it was. It then stays out of character, so you can ask follow-up questions without the chat cutting in. When you send a normal message again, such as a reply in Korean or "ok got it", Dori picks the conversation back up.
+
+There are two commands. `help` resends the quick tips that Dori sends at the end of onboarding. `/reset` deletes your profile and your history, and your next text starts onboarding again.
 
 ## How it works
 
@@ -42,7 +44,9 @@ LoopMessage delivers each text and tapback as a webhook, and it retries up to 30
 4. It adds the text to that sender's buffer and waits for 3 quiet seconds, so three short texts in a row become one turn.
 5. It runs the turn. Turns for the same person run one at a time, and different people don't wait for each other.
 
-If a turn crashes, the user gets "Sorry, can you say that again? 🙏" and the traceback goes to the log.
+A ❓ tapback skips the wait in step 4. Every message Dori sends is stored with its LoopMessage id, which is how a tapback is matched to the message it landed on.
+
+When a text arrives, the server also asks LoopMessage to mark it as read and show a typing bubble while the reply is prepared. If a turn crashes, the user gets "Sorry, can you say that again? 🙏" and the traceback goes to the log.
 
 ### The model
 
@@ -51,6 +55,12 @@ Each chat turn is a single call to NVIDIA Nemotron 3 Ultra. The prompt carries t
 Ultra is the only Nemotron model that lists Korean as supported. In a side-by-side run of `scripts/bench_models.py`, the faster Nemotron 3.5 Lightning returned valid JSON but missed the speech-level mistake both times.
 
 Lightning is still the fallback. If Ultra errors, returns a 429 or takes longer than 10 seconds, the call is retried once on Lightning and the log records why. The JSON is parsed leniently: code fences, stray text around the object and a cut-off object are all handled. If the model answers in plain prose, that text goes out as an ordinary reply.
+
+## Limits
+
+- Dori has only been tested with English speakers learning Korean. The profile stores both languages and the prompts use them, so other pairs may work, but nobody has tried.
+- The LoopMessage sandbox allows five contacts, and Dori can only reply within 24 hours of a contact's last text.
+- Dori never texts first, so there are no reminders. Voice messages, group chats and a progress dashboard are not built.
 
 ## Requirements
 
@@ -96,6 +106,8 @@ curl https://<your-domain>/health    # {"ok":true}
 On the LoopMessage sandbox page, set Sandbox Webhook URL to `https://<your-domain>/webhook` and Sandbox Webhook Header to the exact value of `WEBHOOK_SECRET`, with no `Bearer` prefix. Save.
 
 Now text the sandbox number from your iPhone. The sandbox can't start a conversation, so the first text has to come from you. Each text you send reopens a 24-hour window in which Dori can reply.
+
+To start over, for example before a demo, text `/reset` and then anything else.
 
 To see what is happening, watch the debug log. It gets one JSON line per webhook and one per turn, including the model used, its raw output and how long it took:
 
