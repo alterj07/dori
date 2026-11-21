@@ -373,6 +373,13 @@ def explain_turn(
     )
 
 
+# Added to a prompt when the model's answer had nothing in it to send.
+EMPTY_ANSWER_NOTE = (
+    "\n\nYour last answer left the reply empty. Answer again and write the reply this time. "
+    "Even a message that is only laughter or an emoji gets a short reply in character."
+)
+
+
 def wrong_language_note(user: dict[str, Any]) -> str:
     """Added to a prompt when an out-of-character answer came back in the target language."""
     return (

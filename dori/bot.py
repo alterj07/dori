@@ -294,6 +294,14 @@ def _history(phone: str) -> list[dict[str, Any]]:
     return [message for message in recent if message["kind"] != "system"]
 
 
+def _nothing_to_send(data: dict[str, Any]) -> bool:
+    """True when the model's answer has no text in the field that would be sent."""
+    reply = _texted(data.get("reply"))
+    if data.get("intent") == "question":
+        return not (_texted(data.get("explanation")) or reply)
+    return not reply
+
+
 async def _chat(
     phone: str,
     user: dict[str, Any],
@@ -317,6 +325,11 @@ async def _chat(
     system = prompts.chat_system(user)
     content = prompts.chat_turn(user, history, text, replied_to)
     data = await llm.chat_json(system, [{"role": "user", "content": content}])
+    if _nothing_to_send(data):
+        # Seen on texts like "ㅋㅋㅋ": the model returns an empty reply.
+        log.warning("the model left its answer empty; asking again")
+        retry = content + prompts.EMPTY_ANSWER_NOTE
+        data = await llm.chat_json(system, [{"role": "user", "content": retry}])
     correction = _texted(data.get("correction"))
     explanation = _texted(data.get("explanation"))
     reply = _texted(data.get("reply"))

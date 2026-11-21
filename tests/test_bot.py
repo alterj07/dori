@@ -516,8 +516,17 @@ async def test_a_refused_inline_reply_goes_out_as_a_normal_message(model, chatti
     assert store.recent(PHONE)[-2]["kind"] == "correction"
 
 
-async def test_an_empty_answer_from_the_model_raises(sent, model, chatting):
-    model.replies = [chat_reply("")]
+async def test_an_empty_answer_is_asked_for_once_more(sent, model, chatting):
+    model.replies = [chat_reply(""), chat_reply("ㅋㅋㅋ 왜 웃어?")]
+
+    await bot.handle_turn(PHONE, message("ㅋㅋㅋㅋㅋㅋ", "in-5"))
+
+    assert [m["text"] for m in sent] == ["ㅋㅋㅋ 왜 웃어?"]
+    assert "left the reply empty" in model.calls[1]["user"]
+
+
+async def test_two_empty_answers_in_a_row_raise(sent, model, chatting):
+    model.replies = [chat_reply(""), chat_reply("")]
 
     with pytest.raises(bot.BotError):
         await bot.handle_turn(PHONE, message("친구 만났어", "in-5"))
