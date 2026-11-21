@@ -37,8 +37,8 @@ def webhook(payload: dict[str, Any], note: str) -> None:
     """Log a webhook as it arrives. ``note`` says what the server did with it."""
     write(
         {
-            "phone": payload.get("contact"),
-            "event_type": payload.get("event"),
+            "phone": payload.get("contact") or payload.get("recipient"),
+            "event_type": payload.get("event") or payload.get("alert_type"),
             "incoming_text": payload.get("text"),
             "note": note,
             "payload": payload,

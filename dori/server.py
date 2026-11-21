@@ -155,8 +155,9 @@ def _authorized(request: Request) -> bool:
 
 def route(payload: dict[str, Any]) -> str:
     """Hand one webhook to the dispatcher. Returns a short note for the log."""
-    event = payload.get("event")
-    phone = payload.get("contact")
+    # Older LoopMessage payloads call these two fields alert_type and recipient.
+    event = payload.get("event") or payload.get("alert_type")
+    phone = payload.get("contact") or payload.get("recipient")
     message_id = payload.get("message_id")
 
     if not phone or payload.get("group"):
