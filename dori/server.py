@@ -19,7 +19,7 @@ from typing import Any
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
-from dori import bot, config, loop_client, store, turn_log
+from dori import bot, config, llm, loop_client, store, turn_log
 from dori.events import Event
 
 log = logging.getLogger("dori.server")
@@ -128,6 +128,7 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     yield
     dispatcher.cancel()
     await loop_client.aclose()
+    await llm.aclose()
     store.close()
 
 
