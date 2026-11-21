@@ -169,6 +169,19 @@ def test_explain_mode_adds_a_note_about_follow_up_questions():
     assert placeholders(in_explain) == []
 
 
+def test_explain_prompt_keeps_every_line_in_the_native_language():
+    system = prompts.explain_system(USER)
+
+    assert "Every line of your answer is in English" in system
+
+
+def test_wrong_language_note_asks_for_the_native_language():
+    note = prompts.wrong_language_note(USER)
+
+    assert "Your last answer was written in Korean" in note
+    assert "Write it again in English" in note
+
+
 def test_chat_prompt_treats_the_learner_as_fluent_in_their_own_language():
     system = prompts.chat_system(USER)
 

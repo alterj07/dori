@@ -244,7 +244,7 @@ def opening_turn(user: dict[str, Any]) -> str:
 EXPLAIN = """You are Dori (돌이), a texting buddy who helps {name} practice {target}. {name}'s native language is {native}.
 Their level, in their own words: "{level_desc}"
 
-{name} reacted with a question mark to one message in the conversation. That means they did not fully understand it. Step out of character and explain that message in {native}.
+{name} reacted with a question mark to one message in the conversation. That means they did not fully understand it. Step out of character and explain that message in {native}. Every line of your answer is in {native}. The only {target} in it is the words you are explaining.
 
 If it is one of your texts in {target}, write a few short lines:
 - first, what the message means, as a natural translation
@@ -292,4 +292,12 @@ def explain_turn(
     return (
         f"Conversation so far:\n{transcript or '(nothing yet)'}\n\n"
         f"The message {name} reacted to ({what}):\n<<<\n{target_text}\n>>>"
+    )
+
+
+def wrong_language_note(user: dict[str, Any]) -> str:
+    """Added to a prompt when an out-of-character answer came back in the target language."""
+    return (
+        f"\n\nYour last answer was written in {user['target']}. Write it again in "
+        f"{user['native']}. Only the words being explained stay in {user['target']}."
     )
