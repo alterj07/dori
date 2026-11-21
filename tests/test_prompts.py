@@ -26,6 +26,31 @@ def test_tips_have_the_five_plan_bullets():
     assert 'Text "help" anytime' in prompts.TIPS
 
 
+def test_tips_for_an_english_speaker_practicing_korean_are_the_plan_text():
+    assert prompts.tips(USER) == prompts.TIPS
+
+
+def test_tips_follow_the_users_own_languages():
+    text = prompts.tips({**USER, "native": "Korean", "target": "English"})
+
+    assert "I'll explain it in Korean" in text
+    assert "just reply in English" in text
+    assert "대박" not in text
+
+
+def test_language_warning_is_only_for_languages_dori_is_not_tuned_for():
+    korean_to_english = {**USER, "native": "Korean", "target": "English"}
+
+    assert prompts.language_warning(USER) is None
+    assert prompts.language_warning(korean_to_english) is None
+    assert prompts.language_warning({**USER, "target": "Japanese"}) == (
+        "Just a warning, I'm only tuned for English and Korean so far, "
+        "so my Japanese might be a bit rough"
+    )
+    both = prompts.language_warning({**USER, "native": "Spanish", "target": "Japanese"})
+    assert "my Spanish and Japanese might be a bit rough" in both
+
+
 def test_ask_missing_lists_only_the_missing_fields():
     text = prompts.ask_missing(["level_desc", "style"])
 

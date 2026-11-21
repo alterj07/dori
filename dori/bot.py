@@ -111,7 +111,7 @@ async def handle_turn(phone: str, event: Event) -> None:
 
     if command == "help":
         store.add_message(phone, "user", text, kind="system", loop_id=event.message_id)
-        await say(phone, prompts.TIPS, kind="system")
+        await say(phone, prompts.tips(user), kind="system")
         return
 
     await _chat(phone, user, text, event.message_id, event.in_reply_to)
@@ -145,7 +145,10 @@ async def _onboard(phone: str, user: dict[str, Any], text: str, message_id: str 
         return
 
     store.set_mode(phone, "chat")
-    await say(phone, prompts.TIPS, kind="system")
+    warning = prompts.language_warning(user)
+    if warning:
+        await say(phone, warning, kind="system")
+    await say(phone, prompts.tips(user), kind="system")
     await _open_conversation(phone, user)
 
 

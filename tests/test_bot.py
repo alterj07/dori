@@ -86,6 +86,33 @@ async def test_a_complete_answer_finishes_onboarding(sent, model):
     assert [m["text"] for m in sent] == [prompts.TIPS, "Jay, 안녕! 오늘 뭐 했어?"]
 
 
+async def test_an_untuned_language_gets_a_warning_before_the_chat_starts(sent, model):
+    store.save_user(PHONE)
+    profile = {**PROFILE, "native": "Spanish"}
+    model.replies = [profile, chat_reply("Jay, 안녕!")]
+
+    await bot.handle_turn(PHONE, message("I'm Jay, I speak Spanish and want to learn Korean"))
+
+    assert [m["text"] for m in sent] == [
+        "Just a warning, I'm only tuned for English and Korean so far, "
+        "so my Spanish might be a bit rough",
+        prompts.tips(profile),
+        "Jay, 안녕!",
+    ]
+
+
+async def test_a_korean_speaker_practicing_english_gets_no_warning(sent, model):
+    store.save_user(PHONE)
+    profile = {**PROFILE, "native": "Korean", "target": "English"}
+    model.replies = [profile, chat_reply("hey jay! how was your day")]
+
+    await bot.handle_turn(PHONE, message("I'm Jay, I speak Korean and want to learn English"))
+
+    assert [m["text"] for m in sent] == [prompts.tips(profile), "hey jay! how was your day"]
+    assert "explain it in Korean" in sent[0]["text"]
+    assert "just reply in English" in sent[0]["text"]
+
+
 async def test_a_partial_answer_is_followed_up_for_the_missing_fields_only(sent, model):
     store.save_user(PHONE)
     model.replies = [

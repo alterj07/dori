@@ -208,6 +208,44 @@ def is_english(language: str) -> bool:
     return "english" in language.lower() or "영어" in language
 
 
+def tips(user: dict[str, Any]) -> str:
+    """The quick tips, worded for the user's own pair of languages.
+
+    For an English speaker practicing Korean this is exactly ``TIPS``.
+    """
+    native, target = user["native"], user["target"]
+    if is_korean(target):
+        example = '"what does 대박 mean?"'
+    elif is_english(target):
+        example = '"what does lowkey mean?"'
+    else:
+        example = "what a word means"
+    return (
+        "Quick tips:\n"
+        f"• Don't get a message? React with ❓ and I'll explain it in {native}\n"
+        f"• Ask me anything, like {example}\n"
+        "• If you make a mistake, I'll reply to your text with a fix\n"
+        f"• When you're ready to keep chatting, just reply in {target}\n"
+        '• Text "help" anytime to see this again'
+    )
+
+
+def language_warning(user: dict[str, Any]) -> str | None:
+    """A heads-up for a language Dori has not been tuned for, or None if both are fine."""
+    untuned = [
+        language
+        for language in (user["native"], user["target"])
+        if not (is_english(language) or is_korean(language))
+    ]
+    if not untuned:
+        return None
+    names = " and ".join(dict.fromkeys(untuned))
+    return (
+        "Just a warning, I'm only tuned for English and Korean so far, "
+        f"so my {names} might be a bit rough"
+    )
+
+
 def chat_system(user: dict[str, Any]) -> str:
     """The chat system prompt, filled in from the user's profile."""
     style = user["style"] if user["style"] in STYLES else "friendly"
