@@ -27,11 +27,14 @@ def inbound(text, message_id="in-1", phone=PHONE, webhook_id=None):
     }
 
 
-def reaction(name, message_id="out-1", phone=PHONE):
+def reaction(name, message_id="out-1", phone=PHONE, event="placed", direction="inbound"):
+    """A reaction webhook shaped like the ones LoopMessage really sends."""
     return {
         "event": "message_reaction",
         "contact": phone,
-        "reaction": name,
+        "reaction_type": name,
+        "reaction_event": event,
+        "reaction_direction": direction,
         "message_id": message_id,
         "webhook_id": f"wh-{next(_ids)}",
     }
@@ -185,6 +188,21 @@ async def test_a_question_mark_emoji_counts_as_a_question_reaction(client, turns
     assert turns == [(PHONE, Event(kind="reaction", message_id="out-9", reaction="question"))]
 
 
+async def test_the_reaction_field_name_from_the_docs_is_understood_too(client, turns):
+    payload = {
+        "event": "message_reaction",
+        "contact": PHONE,
+        "reaction": "question",
+        "message_id": "out-9",
+        "webhook_id": "wh-docs-shape",
+    }
+
+    await client.post("/webhook", json=payload, headers=AUTH)
+    await server.dispatcher.idle()
+
+    assert turns == [(PHONE, Event(kind="reaction", message_id="out-9", reaction="question"))]
+
+
 async def test_a_reaction_carries_the_text_sent_with_it(client, turns):
     payload = {**reaction("question", "out-9"), "text": "오 대박!"}
 
@@ -200,13 +218,25 @@ async def test_a_reaction_carries_the_text_sent_with_it(client, turns):
     [
         reaction("love"),
         reaction("-question"),
+        reaction("question", event="removed"),
+        reaction("❓", direction="outbound"),
         {"event": "message_delivered", "contact": PHONE, "message_id": "out-1"},
         {"event": "message_failed", "contact": PHONE, "message_id": "out-1"},
         {"event": "unknown"},
         inbound("   "),
         {"event": "message_inbound", "contact": PHONE, "text": "hi", "group": {"group_id": "g"}},
     ],
-    ids=["love", "removed-question", "delivered", "failed", "unknown", "blank-text", "group"],
+    ids=[
+        "love",
+        "old-style-removal",
+        "taken-back",
+        "outbound",
+        "delivered",
+        "failed",
+        "unknown",
+        "blank-text",
+        "group",
+    ],
 )
 async def test_other_events_are_logged_but_start_no_turn(client, turns, payload):
     response = await client.post("/webhook", json=payload, headers=AUTH)
