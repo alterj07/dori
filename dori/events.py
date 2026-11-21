@@ -12,7 +12,8 @@ class Event:
 
     kind "message": ``text`` is everything the user sent during the debounce
     window, joined with newlines. ``message_id`` is the id of their last text,
-    which is the target for an inline correction.
+    which is the target for an inline correction. ``in_reply_to`` is the id of
+    the message they replied to inline, if they used a threaded reply.
 
     kind "reaction": ``message_id`` is the id of the message the user reacted
     to and ``reaction`` is the tapback name. Only "question" reaches the bot.
@@ -23,3 +24,4 @@ class Event:
     text: str = ""
     message_id: str | None = None
     reaction: str | None = None
+    in_reply_to: str | None = None

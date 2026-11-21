@@ -74,14 +74,24 @@ class Dispatcher:
     """
 
     def __init__(self) -> None:
-        self._buffers: dict[str, list[tuple[str, str | None]]] = {}
+        # Per phone: (text, message_id, id of the message it replies to inline).
+        self._buffers: dict[str, list[tuple[str, str | None, str | None]]] = {}
         self._timers: dict[str, asyncio.TimerHandle] = {}
         self._locks: dict[str, asyncio.Lock] = {}
         self._tasks: set[asyncio.Task[Any]] = set()
 
-    def add_message(self, phone: str, text: str, message_id: str | None) -> None:
-        """Buffer one inbound text and (re)start the user's debounce timer."""
-        self._buffers.setdefault(phone, []).append((text, message_id))
+    def add_message(
+        self,
+        phone: str,
+        text: str,
+        message_id: str | None,
+        in_reply_to: str | None = None,
+    ) -> None:
+        """Buffer one inbound text and (re)start the user's debounce timer.
+
+        ``in_reply_to`` is the id of the message this text replies to inline.
+        """
+        self._buffers.setdefault(phone, []).append((text, message_id, in_reply_to))
         timer = self._timers.pop(phone, None)
         if timer is not None:
             timer.cancel()
@@ -115,9 +125,13 @@ class Dispatcher:
             items = self._buffers.pop(phone, [])
             if not items:
                 return
-            text = "\n".join(text for text, _ in items)
-            last_message_id = items[-1][1]
-            await run_turn(phone, Event(kind="message", text=text, message_id=last_message_id))
+            event = Event(
+                kind="message",
+                text="\n".join(item[0] for item in items),
+                message_id=items[-1][1],
+                in_reply_to=next((item[2] for item in reversed(items) if item[2]), None),
+            )
+            await run_turn(phone, event)
 
     async def _run_event(self, phone: str, event: Event) -> None:
         async with self._lock(phone):
@@ -187,7 +201,10 @@ def route(payload: dict[str, Any]) -> str:
         text = (payload.get("text") or "").strip()
         if not text:
             return "ignored: no text"
-        dispatcher.add_message(phone, text, message_id)
+        # An inline reply names the message it answers in a "thread" object.
+        thread = payload.get("thread")
+        in_reply_to = thread.get("initial_message_id") if isinstance(thread, dict) else None
+        dispatcher.add_message(phone, text, message_id, in_reply_to)
         if message_id and config.TYPING_SECONDS > 0:
             dispatcher.spawn(loop_client.show_typing(message_id))
         return "buffered"
