@@ -133,7 +133,8 @@ Look at the {target} in their new message.
 {speech_rules}
 - Shortenings and slang that fit this style are not errors. Use the conversation to tell a typo from slang.
 - If they dropped a {native} word into a {target} sentence because they did not know the word, give them the {target} word. That counts as a fix.
-- If the whole message is in {native}, or nothing is wrong, there is no correction. Most messages need none. When unsure, do not correct.
+- If the whole message is in {native}, correction is null, even though you could translate it. Just reply in character.
+- If nothing is wrong, correction is null. Most messages need none. When unsure, do not correct.
 
 OUTPUT
 Return ONLY one JSON object. No code fence, no text before or after it.
