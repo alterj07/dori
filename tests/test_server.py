@@ -139,6 +139,17 @@ async def test_a_burst_of_texts_becomes_one_turn(client, turns):
     assert turns == [(PHONE, Event(kind="message", text="안녕\n뭐해?\n나 심심해", message_id="in-3"))]
 
 
+async def test_an_inline_reply_carries_the_id_of_the_message_it_answers(client, turns):
+    payload = inbound("whats that", message_id="in-2")
+    payload["thread"] = {"thread_id": "thread-1", "initial_message_id": "in-1"}
+
+    await client.post("/webhook", json=payload, headers=AUTH)
+    await server.dispatcher.idle()
+
+    expected = Event(kind="message", text="whats that", message_id="in-2", in_reply_to="in-1")
+    assert turns == [(PHONE, expected)]
+
+
 async def test_each_new_text_restarts_the_debounce_timer(client, turns, monkeypatch):
     monkeypatch.setattr(config, "DEBOUNCE_S", 0.3)
 
