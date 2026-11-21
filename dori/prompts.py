@@ -125,7 +125,7 @@ _KOREAN_RULES_INFORMAL = """\
 
 _KOREAN_RULES_FORMAL = """\
 - This chat is in polite speech (합니다체 or 해요체). 반말 from them is an error here: rewrite it politely.
-- Slang and texting shortcuts such as ㅋㅋ, ㅇㅇ, 대박 or 헐 are too casual for a business chat as well. Write them out politely as part of the fix, and say in the explanation that they were too casual.
+- Slang and texting shortcuts such as ㅋㅋ, ㅇㅇ, 대박 or 헐 are too casual for a business chat as well. Take them out or replace them with a polite word, and say in the explanation that they were too casual. For example, ㅋㅋ 대박 오늘 회의 진짜 길었어요 becomes 오늘 회의가 정말 길었어요.
 - Mixing speech levels inside one message is an error, for example 만났어요 next to 봤다. Rewrite every sentence ending in consistent polite speech."""
 
 _OTHER_SPEECH = "Use the level of formality that fits this style in every message."
@@ -214,7 +214,7 @@ When the intent is "question":
 - "explanation": your answer in {native}, out of character, short enough for a text (2 to 4 lines). Give the meaning first, then anything useful about tone, slang or culture. Write {target} words in their own script, and never follow one with its romanization in brackets. Answer only what they asked: do not comment on their question, translate it, or show how to ask it in {target}.
 - "reply": ""
 
-"style" is null in almost every answer. Set it only when they clearly ask you to change the way you text them, for example "can you be more formal?" or "talk to me like a friend". Then it is the closest of "casual", "friendly", "romantic" and "business", and the intent is "chat".
+"style" is null in almost every answer. Set it only when they clearly ask you to change the way you text them. Use "business" when they want you more formal, polite or professional, or ask for 존댓말. Use "casual" when they want you relaxed or informal, or ask for 반말. Use "friendly" when they want you warmer or gentler, and "romantic" when they want you sweet or flirty. The intent is then "chat".
 
 Use plain text in every field: no markdown, no asterisks, no bullet characters, no dashes. Do not romanize {target} unless they ask how something is pronounced.
 Whatever you write in {native} should sound like a friend texting, not a textbook or a chatbot: short plain sentences, contractions, no period at the end of the last line, no praise for the question and no summary at the end."""
