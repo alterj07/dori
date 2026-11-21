@@ -20,7 +20,7 @@ Dori:  오 누구랑? ㅋㅋ 무슨 영화 봤어?
 
 Dori fixes at most two errors per message. Slang and shortenings that fit the style (ㅋㅋ, 대박, dropped particles in casual speech) are left alone. Mixing speech levels in one message counts as a mistake in every style, and 반말 counts as one only in business style.
 
-A fix that only changes punctuation or spacing is dropped before it reaches you, and a message with no Korean in it is never corrected. If you drop an English word into a Korean sentence, Dori will often give you the Korean word.
+A fix that only changes punctuation, capital letters or spacing is dropped before it reaches you. So is one that only removes a particle you wrote. A message with no Korean in it is never corrected. If you drop an English word into a Korean sentence, Dori will often give you the Korean word.
 
 If you don't understand one of Dori's messages, react to it with the question mark tapback. A ❓ emoji reaction works too. Dori replies inline to that message and explains it in English: what it means, the slang in it and any cultural context.
 
@@ -36,6 +36,8 @@ Dori:  Translation: Oh wow lol Where did you go? What did you order?
 ```
 
 You can also just ask, in English or in Korean: "what does 대박 mean?" Dori answers in English and leaves the story where it was. A vague question works too. Reply inline to any message with "what's that?" and Dori explains that message. Without an inline reply, it explains the latest Korean one. Dori treats you as fluent in your own language, so it never explains or corrects your English. It then stays out of character, so you can ask follow-up questions without the chat cutting in. When you send a normal message again, such as a reply in Korean or "ok got it", Dori picks the conversation back up.
+
+Dori's English is meant to read like a text from a person. Its explanations are short plain lines, and the period that would end a line of English is removed before sending.
 
 There are two commands. `help` resends the quick tips that Dori sends at the end of onboarding. `/reset` deletes your profile and your history, and your next text starts onboarding again.
 
@@ -65,13 +67,13 @@ When a text arrives, the server also asks LoopMessage to mark it as read and sho
 
 Each chat turn is a single call to NVIDIA Nemotron 3 Ultra. The prompt carries the user's profile and the last 20 messages, and the model returns one JSON object with four fields: `intent` (chat or question), `correction`, `explanation` and `reply`.
 
-Ultra is the only Nemotron model that lists Korean as supported. `scripts/eval_prompts.py` runs the chat prompt over 26 learner messages and checks whether each one gets fixed, left alone or treated as a question. In the last run Ultra matched 25 of them. The much faster Nemotron 3.5 Lightning matched 21 of 24 on an earlier version of the set, but several of its fixes were wrong. It changed 만났어요 to 만났고, for example, where the right fix is 만났어.
+Ultra is the only Nemotron model that lists Korean as supported. `scripts/eval_prompts.py` runs the chat prompt over 37 learner messages and checks whether each one gets fixed, left alone or treated as a question. In the last run Ultra matched all of them. The much faster Nemotron 3.5 Lightning matched 21 of 24 on an earlier version of the set, but several of its fixes were wrong. It changed 만났어요 to 만났고, for example, where the right fix is 만났어.
 
 Lightning is still the fallback. If Ultra errors, returns a 429 or takes longer than 10 seconds, the call is retried once on Lightning and the log records why. The JSON is parsed leniently: code fences, stray text around the object and a cut-off object are all handled. If the model answers in plain prose, that text goes out as an ordinary reply. If an explanation comes back mostly in Korean, the bot asks once more for it in the user's language.
 
 ## Limits
 
-- Dori has only been tested with English speakers learning Korean. The profile stores both languages and the prompts use them, so other pairs may work, but nobody has tried.
+- Dori has mostly been tested with English speakers learning Korean. Korean speakers practicing English have eight scoring cases and one real conversation behind them. There, texting habits such as a lowercase i, no final period and "im" are left alone, while real errors such as "she dont like" are fixed. Other pairs may work, but nobody has tried.
 - The LoopMessage sandbox allows five contacts, and Dori can only reply within 24 hours of a contact's last text.
 - Dori never texts first, so there are no reminders. Voice messages, group chats and a progress dashboard are not built.
 
