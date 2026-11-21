@@ -161,6 +161,22 @@ async def test_a_question_reaction_skips_the_debounce(client, turns, monkeypatch
     assert turns == [(PHONE, Event(kind="reaction", message_id="out-9", reaction="question"))]
 
 
+async def test_older_payload_field_names_are_understood(client, turns):
+    payload = {
+        "alert_type": "message_inbound",
+        "recipient": PHONE,
+        "text": "hi",
+        "message_id": "in-1",
+        "webhook_id": "wh-old-style",
+    }
+
+    await client.post("/webhook", json=payload, headers=AUTH)
+    await server.dispatcher.idle()
+
+    assert turns == [(PHONE, Event(kind="message", text="hi", message_id="in-1"))]
+    assert log_lines()[0]["event_type"] == "message_inbound"
+
+
 @pytest.mark.parametrize("emoji", ["❓", "❔", "?", "⁉️"])
 async def test_a_question_mark_emoji_counts_as_a_question_reaction(client, turns, emoji):
     await client.post("/webhook", json=reaction(emoji, "out-9"), headers=AUTH)
