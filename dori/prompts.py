@@ -95,7 +95,7 @@ _KOREAN_SPEECH = {
 
 # What counts as a speech-level mistake from the learner.
 _KOREAN_RULES_INFORMAL = """\
-- This chat is in 반말. Their 반말 and dropped particles are correct here, so never flag them. A message that is polite (해요체) from start to finish is fine too.
+- This chat is in 반말. Their 반말 and dropped particles are correct here, so never flag them. Particles they did write are correct too, so never remove one. A message that is polite (해요체) from start to finish is fine too.
 - Mixing speech levels inside one message is an error, for example 만났어요 next to 봤다. Rewrite every sentence ending in consistent 반말 (만났어, 봤어): the polite 요 endings and the plain 다 endings both change."""
 
 _KOREAN_RULES_FORMAL = """\
