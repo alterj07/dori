@@ -50,6 +50,9 @@ CASES = [
     Case("casual", "밥 먹었어?", "ㅇㅇ 방금 먹었어 너는?", "none"),
     Case("casual", "나 오늘 시험 봤어", "헐 대박 진짜? 어땠어", "none"),
     Case("casual", "주말에 뭐 했어?", "나는 집에 있었어 너는 주말에 뭐 했어?", "none"),
+    # Casual: correct, even though another phrasing is more common.
+    Case("casual", "오늘 뭐 했어?", "나 오늘 시험 봤어 근데 망했어 ㅠㅠ", "none"),
+    Case("casual", "오늘 뭐 해?", "나 오늘 친구 만나 같이 밥 먹을 거야", "none"),
     Case("casual", "뭐 먹었어?", "나는 김치찌개를 먹었어 진짜 맛있었어", "none"),
     # Casual: an English word where the Korean one was not known.
     Case("casual", "오늘 뭐 했어?", "나 오늘 gym 갔어", "fix"),
