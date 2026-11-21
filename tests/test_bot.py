@@ -404,6 +404,19 @@ async def test_a_real_english_error_is_still_corrected(sent, model, practicing_e
     }
 
 
+async def test_a_fix_from_the_fallback_model_is_not_passed_on(sent, model, chatting):
+    model.replies = [
+        {
+            **chat_reply("오 진짜?", correction="나 어제 친구 만났고", explanation="Use 고."),
+            "_fallback": True,
+        }
+    ]
+
+    await bot.handle_turn(PHONE, message("나 어제 친구 만났어요", "in-5"))
+
+    assert [m["text"] for m in sent] == ["오 진짜?"]
+
+
 async def test_a_stray_english_line_is_dropped_from_a_korean_reply(sent, model, chatting):
     model.replies = [chat_reply("진짜? 나두 계속 생각났는데 ㅎㅎ\nyou're sweet\n😊")]
 

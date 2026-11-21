@@ -401,6 +401,10 @@ async def _chat(
     correction = _texted(data.get("correction"))
     explanation = _texted(data.get("explanation"))
     reply = _texted(data.get("reply"))
+    if data.get("_fallback") and correction:
+        # The fallback model's fixes are wrong too often to teach from.
+        log.warning("dropped a correction that came from the fallback model")
+        correction = ""
 
     if data.get("intent") == "question":
         answer = explanation or reply
