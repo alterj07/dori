@@ -102,6 +102,18 @@ CASES = [
     Case("casual", "does she like pizza", "no she dont like pizza", "fix", **EN),
     Case("business", "When can you send the report?", "i will send it tomorrow morning", "none", **EN),
     Case("business", "When can you send the report?", "u will get it tmrw", "fix", **EN),
+    Case(
+        "business",
+        "Good morning, how are you today?",
+        "yo yo yo my g whats goodie! im trynna sleep in tn whatchu up to",
+        "fix",
+        **EN,
+    ),
+    Case("business", "오늘 하루 어떠셨어요?", "ㅋㅋ 대박 오늘 회의 진짜 길었어요", "fix"),
+    # Asking for another style, in their own words.
+    Case("casual", "오늘 뭐 했어?", "can you talk to me more formally?", "style:business"),
+    Case("business", "오늘 하루 어떠셨어요?", "편하게 말해 주세요 반말로 해요", "style:casual"),
+    Case("friendly", "오늘 기분 어때?", "can you be romantic instead", "style:romantic"),
 ]
 
 
@@ -118,6 +130,9 @@ def user_for(case: Case) -> dict[str, str]:
 
 def verdict(case: Case, data: dict) -> str:
     """What the bot would actually do with this model output."""
+    wanted = bot._text(data.get("style")).lower()
+    if wanted in prompts.STYLES and wanted != case.style:
+        return f"style:{wanted}"
     if data.get("intent") == "question":
         return "question"
     correction = bot._text(data.get("correction"))
