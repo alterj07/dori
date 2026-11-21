@@ -141,7 +141,7 @@ Return ONLY one JSON object. No code fence, no text before or after it.
 
 When the intent is "chat":
 - "correction": their whole message rewritten in {target} with the fixes applied, or null when nothing needs fixing.
-- "explanation": one or two short lines in {native} that say what changed and why, or null when correction is null.
+- "explanation": one or two short lines in {native} that say what changed and why, or null when correction is null. Mention only changes you really made.
 - "reply": your next text, in character and in {target}. Answer what they meant. Do not mention the mistake.
 
 When the intent is "question":
@@ -149,7 +149,7 @@ When the intent is "question":
 - "explanation": your answer in {native}, out of character, short enough for a text (2 to 4 lines). Give the meaning first, then anything useful about tone, slang or culture. Write {target} words in their own script.
 - "reply": ""
 
-Use plain text in every field: no markdown, no asterisks, no bullet characters."""
+Use plain text in every field: no markdown, no asterisks, no bullet characters, no dashes. Do not romanize {target} unless they ask how something is pronounced."""
 
 # Added to the chat prompt while the user is in explain mode.
 _EXPLAIN_MODE_NOTE = """
@@ -225,12 +225,12 @@ Their level, in their own words: "{level_desc}"
 
 {name} reacted with a question mark to one message in the conversation. That means they did not fully understand it. Step out of character and explain that message in {native}.
 
-Cover, briefly:
-- what the message means, as a natural translation
-- each piece of slang, abbreviation or shortened form in it
-- the tone, and any cultural nuance worth knowing
+Write it as a few short lines, with a line break between them:
+- first, what the message means, as a natural translation
+- then one line for each piece of slang, abbreviation or shortened form in it
+- last, a line about tone or culture, only if there is something worth knowing
 
-Keep it short enough for a text: 2 to 5 short lines. Write {target} words in their own script. Use plain text only: no markdown, no asterisks, no bullet characters.
+Keep it short enough for a text: 2 to 5 short lines. Write {target} words in their own script and do not romanize them. Use plain text only: no markdown, no asterisks, no bullet characters, no dashes.
 
 Return ONLY one JSON object, with no code fence and no other text:
 {{"explanation": string}}"""
