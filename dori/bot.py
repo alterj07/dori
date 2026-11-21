@@ -213,7 +213,7 @@ async def _open_conversation(phone: str, user: dict[str, Any]) -> None:
     reply = _texted(data.get("reply"))
     if not reply:
         raise BotError("the model gave no opening message")
-    await say_bubbles(phone, reply)
+    await say_bubbles(phone, _in_character_lines(user, reply))
 
 
 # --- Chat ---
@@ -294,6 +294,22 @@ def _history(phone: str) -> list[dict[str, Any]]:
     return [message for message in recent if message["kind"] != "system"]
 
 
+def _in_character_lines(user: dict[str, Any], reply: str) -> str:
+    """Drop a stray line in the user's own language from an in-character Korean reply.
+
+    Now and then the model adds an English aside as a bubble of its own. A line
+    is stray when it has Latin letters and no Hangul while another line is
+    Korean. A reply with no Korean at all is left as it is.
+    """
+    if not prompts.is_korean(user["target"]) or prompts.is_korean(user["native"]):
+        return reply
+    lines = [line for line in reply.splitlines() if line.strip()]
+    if not any(_HANGUL.search(line) for line in lines):
+        return reply
+    kept = [line for line in lines if _HANGUL.search(line) or not _LATIN.search(line)]
+    return "\n".join(kept)
+
+
 def _nothing_to_send(data: dict[str, Any]) -> bool:
     """True when the model's answer has no text in the field that would be sent."""
     reply = _texted(data.get("reply"))
@@ -354,7 +370,7 @@ async def _chat(
         await say(phone, fix, kind="correction", reply_to=message_id)
     if not reply and not corrected:
         raise BotError("the model gave no reply")
-    await say_bubbles(phone, reply)
+    await say_bubbles(phone, _in_character_lines(user, reply))
     store.set_mode(phone, "chat")
 
 

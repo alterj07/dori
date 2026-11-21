@@ -361,6 +361,22 @@ async def test_a_real_english_error_is_still_corrected(sent, model, practicing_e
     }
 
 
+async def test_a_stray_english_line_is_dropped_from_a_korean_reply(sent, model, chatting):
+    model.replies = [chat_reply("진짜? 나두 계속 생각났는데 ㅎㅎ\nyou're sweet\n😊")]
+
+    await bot.handle_turn(PHONE, message("오늘 계속 너 생각했어", "in-5"))
+
+    assert [m["text"] for m in sent] == ["진짜? 나두 계속 생각났는데 ㅎㅎ", "😊"]
+
+
+async def test_a_reply_with_no_korean_at_all_is_sent_as_it_is(sent, model, chatting):
+    model.replies = [chat_reply("ok!")]
+
+    await bot.handle_turn(PHONE, message("나 간다", "in-5"))
+
+    assert [m["text"] for m in sent] == ["ok!"]
+
+
 async def test_english_texts_do_not_end_with_a_period(sent, model, practicing_english):
     model.replies = [chat_reply("That's so cool.\nHow did you two meet?\nI don't know...")]
 
