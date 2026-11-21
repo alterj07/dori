@@ -39,7 +39,12 @@ class Case:
     replied_to: str = ""  # an earlier message of the learner's that this one replies to inline
     needs: str = ""  # text the answer has to contain
     avoids: str = ""  # text the answer must not contain
+    native: str = "English"
+    target: str = "Korean"
 
+
+# A Korean speaker practicing English.
+EN = {"native": "Korean", "target": "English"}
 
 CASES = [
     # Casual: real errors.
@@ -88,14 +93,23 @@ CASES = [
     Case("romantic", "자기야 오늘 뭐 했어?", "오늘 계속 너 생각했어 ㅎㅎ", "none"),
     Case("romantic", "보고 싶어 ㅠㅠ", "나도 너를 보고 싶어요 그리고 사랑한다", "fix"),
     Case("friendly", "오늘 기분 어때?", "오늘 기분 좋아! 날씨가 좋아서 산책했어", "none"),
+    # English as the practice language: texting habits are fine, real errors are not.
+    Case("casual", "hey! how was your day", "im good hbu", "none", **EN),
+    Case("casual", "omg who is she", "hi i have a girlfriend", "none", **EN),
+    Case("casual", "wait are you serious", "im not joking", "none", **EN),
+    Case("romantic", "how did you two meet?", "in physics class senior year of highschool", "none", **EN),
+    Case("casual", "what did you do yesterday", "yesterday i go to school and meet my friend", "fix", **EN),
+    Case("casual", "does she like pizza", "no she dont like pizza", "fix", **EN),
+    Case("business", "When can you send the report?", "i will send it tomorrow morning", "none", **EN),
+    Case("business", "When can you send the report?", "u will get it tmrw", "fix", **EN),
 ]
 
 
 def user_for(case: Case) -> dict[str, str]:
     return {
         "name": "Jay",
-        "native": "English",
-        "target": "Korean",
+        "native": case.native,
+        "target": case.target,
         "level_desc": LEVEL,
         "style": case.style,
         "mode": case.mode,
