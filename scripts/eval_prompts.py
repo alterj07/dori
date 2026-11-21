@@ -89,7 +89,7 @@ def verdict(case: Case, data: dict) -> str:
     if data.get("intent") == "question":
         return "question"
     correction = bot._text(data.get("correction"))
-    return "fix" if correction and not bot._same(correction, case.text) else "none"
+    return "fix" if bot.usable_correction(user_for(case), case.text, correction) else "none"
 
 
 async def run_case(case: Case, gate: asyncio.Semaphore) -> bool:
