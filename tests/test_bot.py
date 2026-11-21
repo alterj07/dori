@@ -405,3 +405,34 @@ async def test_a_normal_message_goes_back_in_character(sent, model, chatting):
 
     assert [m["text"] for m in sent] == ["ㅋㅋ 그래서 무슨 영화 봤어?"]
     assert store.get_user(PHONE)["mode"] == "chat"
+
+
+# --- Commands ---
+
+
+@pytest.mark.parametrize("command", ["/reset", "/Reset", " /RESET "])
+async def test_reset_wipes_the_user_and_confirms(sent, model, chatting, command):
+    await bot.handle_turn(PHONE, message(command))
+
+    assert store.get_user(PHONE) is None
+    assert store.recent(PHONE) == []
+    assert sent == [{"text": prompts.RESET_DONE, "reply_to": None}]
+    assert model.calls == []
+
+
+async def test_the_next_text_after_a_reset_gets_the_welcome(sent, model, chatting):
+    await bot.handle_turn(PHONE, message("/reset"))
+    await bot.handle_turn(PHONE, message("hi"))
+
+    assert [m["text"] for m in sent] == [prompts.RESET_DONE, prompts.WELCOME]
+    assert store.get_user(PHONE)["mode"] == "onboarding"
+
+
+async def test_reset_works_in_the_middle_of_onboarding(sent, model):
+    store.save_user(PHONE, name="Jay")
+
+    await bot.handle_turn(PHONE, message("/reset"))
+
+    assert store.get_user(PHONE) is None
+    assert model.calls == []
+    assert [m["text"] for m in sent] == [prompts.RESET_DONE]
