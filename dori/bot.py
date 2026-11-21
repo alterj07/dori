@@ -161,6 +161,9 @@ def _profile_updates(data: dict[str, Any], missing: list[str]) -> dict[str, str]
             value = value.lower()
             if value not in prompts.STYLES:
                 continue
+        elif field != "level_desc" and value.islower():
+            # "english" and "jayden" read better capitalised in the tips and greetings.
+            value = value[:1].upper() + value[1:]
         if value:
             updates[field] = value
     return updates

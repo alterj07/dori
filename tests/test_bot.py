@@ -142,6 +142,19 @@ async def test_the_follow_up_answer_completes_the_profile(sent, model):
     assert "Still needed: level_desc, style" in model.calls[0]["system"]
 
 
+async def test_lowercase_names_and_languages_are_capitalised(sent, model):
+    store.save_user(PHONE)
+    model.replies = [
+        {"name": "hyun", "native": "english", "target": "korean", "level_desc": "its alr"}
+    ]
+
+    await bot.handle_turn(PHONE, message("hyun english korean its alr"))
+
+    user = store.get_user(PHONE)
+    assert (user["name"], user["native"], user["target"]) == ("Hyun", "English", "Korean")
+    assert user["level_desc"] == "its alr"
+
+
 async def test_an_unknown_style_is_asked_for_again(sent, model):
     store.save_user(PHONE, name="Jay", native="English", target="Korean", level_desc="beginner")
     model.replies = [{"style": "pirate"}]
