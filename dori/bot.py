@@ -66,6 +66,20 @@ def _text(value: Any) -> str:
     return "" if value.lower() in ("null", "none") else value
 
 
+# A period that closes a line and follows a Latin letter, digit or quote.
+_FINAL_PERIOD = re.compile(r"(?<=[A-Za-z0-9\"')])\.[ \t]*$", re.MULTILINE)
+
+
+def _texted(value: Any) -> str:
+    """A model field cleaned up to be sent as a text message.
+
+    People rarely end a text with a period, and a reply that always does reads
+    like a bot. This drops the period that closes a line of English. An
+    ellipsis and a Korean sentence ending are left alone.
+    """
+    return _FINAL_PERIOD.sub("", _text(value))
+
+
 async def handle_turn(phone: str, event: Event) -> None:
     """Handle one turn. The first matching case wins."""
     text = event.text.strip()
@@ -190,7 +204,7 @@ async def _open_conversation(phone: str, user: dict[str, Any]) -> None:
         prompts.chat_system(user),
         [{"role": "user", "content": prompts.opening_turn(user)}],
     )
-    reply = _text(data.get("reply"))
+    reply = _texted(data.get("reply"))
     if not reply:
         raise BotError("the model gave no opening message")
     await say_bubbles(phone, reply)
@@ -297,9 +311,9 @@ async def _chat(
     system = prompts.chat_system(user)
     content = prompts.chat_turn(user, history, text, replied_to)
     data = await llm.chat_json(system, [{"role": "user", "content": content}])
-    correction = _text(data.get("correction"))
-    explanation = _text(data.get("explanation"))
-    reply = _text(data.get("reply"))
+    correction = _texted(data.get("correction"))
+    explanation = _texted(data.get("explanation"))
+    reply = _texted(data.get("reply"))
 
     if data.get("intent") == "question":
         answer = explanation or reply
@@ -307,7 +321,7 @@ async def _chat(
             log.warning("the answer came back in the wrong language; asking again")
             retry = content + prompts.wrong_language_note(user)
             again = await llm.chat_json(system, [{"role": "user", "content": retry}])
-            answer = _text(again.get("explanation")) or _text(again.get("reply")) or answer
+            answer = _texted(again.get("explanation")) or _texted(again.get("reply")) or answer
         if not answer:
             raise BotError("the model gave no answer to the question")
         await say(phone, answer, kind="explanation")
@@ -352,7 +366,7 @@ def _reaction_target(phone: str, event: Event) -> dict[str, Any] | None:
 async def _explanation(system: str, content: str) -> str:
     """One model call that returns an explanation, or "" if it gave none."""
     data = await llm.chat_json(system, [{"role": "user", "content": content}])
-    return _text(data.get("explanation")) or _text(data.get("reply"))
+    return _texted(data.get("explanation")) or _texted(data.get("reply"))
 
 
 async def _explain(phone: str, user: dict[str, Any], event: Event) -> None:

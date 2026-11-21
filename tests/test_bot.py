@@ -321,6 +321,26 @@ async def test_a_real_english_error_is_still_corrected(sent, model, practicing_e
     }
 
 
+async def test_english_texts_do_not_end_with_a_period(sent, model, practicing_english):
+    model.replies = [chat_reply("That's so cool.\nHow did you two meet?\nI don't know...")]
+
+    await bot.handle_turn(PHONE, message("i have a girlfriend", "in-5"))
+
+    assert [m["text"] for m in sent] == [
+        "That's so cool",
+        "How did you two meet?",
+        "I don't know...",
+    ]
+
+
+async def test_korean_sentences_keep_their_period(sent, model, chatting):
+    model.replies = [chat_reply("수고하셨어요.")]
+
+    await bot.handle_turn(PHONE, message("일 많이 했어", "in-5"))
+
+    assert [m["text"] for m in sent] == ["수고하셨어요."]
+
+
 async def test_a_fix_that_only_removes_correct_particles_is_dropped(sent, model, chatting):
     model.replies = [
         chat_reply(
@@ -385,7 +405,7 @@ async def test_long_dashes_from_the_model_become_commas(sent, model, chatting):
 
     await bot.handle_turn(PHONE, message("what does 헐 mean?", "in-5"))
 
-    assert [m["text"] for m in sent] == ["헐 is slang for surprise, like whoa."]
+    assert [m["text"] for m in sent] == ["헐 is slang for surprise, like whoa"]
 
 
 async def test_a_language_question_gets_only_the_answer(sent, model, chatting):
@@ -400,7 +420,7 @@ async def test_a_language_question_gets_only_the_answer(sent, model, chatting):
 
     await bot.handle_turn(PHONE, message("what does 대박 mean?", "in-5"))
 
-    assert sent == [{"text": "대박 means awesome or no way. It is casual slang.", "reply_to": None}]
+    assert sent == [{"text": "대박 means awesome or no way. It is casual slang", "reply_to": None}]
     assert store.recent(PHONE)[-1]["kind"] == "explanation"
 
 
@@ -492,7 +512,7 @@ async def test_a_reaction_with_an_unknown_id_is_matched_by_its_text(sent, model,
 
     await bot.handle_turn(PHONE, question_reaction("some-other-id", text="오 대박!"))
 
-    assert sent == [{"text": "대박 means awesome.", "reply_to": "out-1"}]
+    assert sent == [{"text": "대박 means awesome", "reply_to": "out-1"}]
 
 
 async def test_a_reaction_that_matches_nothing_explains_doris_latest_message(sent, model, chatting):
@@ -502,7 +522,7 @@ async def test_a_reaction_that_matches_nothing_explains_doris_latest_message(sen
 
     await bot.handle_turn(PHONE, question_reaction("some-other-id"))
 
-    assert sent == [{"text": "It asks which movie you saw.", "reply_to": "out-1"}]
+    assert sent == [{"text": "It asks which movie you saw", "reply_to": "out-1"}]
 
 
 async def test_a_reaction_on_the_users_own_message_is_ignored(sent, model, chatting):
@@ -554,7 +574,7 @@ async def test_follow_up_questions_stay_in_explain_mode(sent, model, chatting):
     await bot.handle_turn(PHONE, message("what does 대박 mean?", "in-5"))
     await bot.handle_turn(PHONE, message("and 헐?", "in-6"))
 
-    assert [m["text"] for m in sent] == ["대박 means awesome.", "헐 means whoa."]
+    assert [m["text"] for m in sent] == ["대박 means awesome", "헐 means whoa"]
     assert store.get_user(PHONE)["mode"] == "explain"
     assert "RIGHT NOW" not in model.calls[0]["system"]
     assert "RIGHT NOW" in model.calls[1]["system"]
@@ -631,7 +651,7 @@ async def test_help_during_onboarding_is_read_as_an_answer(sent, model):
 # --- Answers in the wrong language ---
 
 KOREAN_ANSWER = "오늘 하루가 많이 힘들었구나, 푹 쉬어.\n토닥토닥 = 등을 가볍게 두드리다"
-ENGLISH_ANSWER = "It means: you had a hard day, rest well.\n토닥토닥 = patting someone gently"
+ENGLISH_ANSWER = "It means: you had a hard day, rest well\n토닥토닥 = patting someone gently"
 
 
 async def test_an_explanation_in_korean_is_asked_for_again_in_english(sent, model, chatting):
