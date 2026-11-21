@@ -143,3 +143,13 @@ def test_explain_turn_ends_with_the_message_to_explain():
 
     assert "Dori: ㅋㅋ 주말에 뭐 했어?" in turn
     assert turn.endswith("The message Jay reacted to:\n<<<\nㅋㅋ 주말에 뭐 했어?\n>>>")
+
+
+def test_explain_mode_adds_a_note_about_follow_up_questions():
+    in_chat = prompts.chat_system({**USER, "mode": "chat"})
+    in_explain = prompts.chat_system({**USER, "mode": "explain"})
+
+    assert "RIGHT NOW" not in in_chat
+    assert "RIGHT NOW" in in_explain
+    assert "go back in character" in in_explain
+    assert placeholders(in_explain) == []
