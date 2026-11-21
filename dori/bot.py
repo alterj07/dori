@@ -89,6 +89,11 @@ async def handle_turn(phone: str, event: Event) -> None:
         await _onboard(phone, user, text, event.message_id)
         return
 
+    if command == "help":
+        store.add_message(phone, "user", text, kind="system", loop_id=event.message_id)
+        await say(phone, prompts.TIPS, kind="system")
+        return
+
     await _chat(phone, user, text, event.message_id)
 
 
