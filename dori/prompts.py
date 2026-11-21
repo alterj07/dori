@@ -65,7 +65,9 @@ Rules:
 - level_desc: copy their own words about their level exactly. Do not summarise, translate or correct them.
 - style: exactly one of "casual", "friendly", "romantic", "business". Map a close word to the nearest one: formal, polite, professional or work means business; flirty or dating means romantic; chill, relaxed or informal means casual; warm, kind or gentle means friendly. If nothing fits, use null.
 - A short answer usually belongs to a field that is still needed. If only style is still needed and they write "casual please", that is the style.
-- A language named on its own, with nothing to say which one it is, goes in target if target is still needed. Otherwise it goes in native."""
+- People often answer with a bare list in the order they were asked: name, native language, language to practice, level, style. In "Mina english korean beginner casual", Mina is the name, English is native and Korean is target.
+- The name can be in any script, for example 현 or Jay. A first word that is not a language, a level or a style is the name.
+- If the whole message names only one language and nothing says which it is, it goes in target if target is still needed. Otherwise it goes in native."""
 
 
 def onboarding_system(known: dict[str, str], missing: list[str]) -> str:
