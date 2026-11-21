@@ -173,6 +173,20 @@ def _same(first: str, second: str) -> bool:
     return _SPACING_AND_PUNCTUATION.sub("", first) == _SPACING_AND_PUNCTUATION.sub("", second)
 
 
+_LATIN = re.compile(r"[A-Za-z]")
+
+
+def _in_wrong_language(user: dict[str, Any], answer: str) -> bool:
+    """True when an out-of-character answer is mostly Korean for a non-Korean speaker.
+
+    Explanations quote Korean words, so some Hangul is expected. More Hangul
+    than Latin letters means the model answered in the wrong language.
+    """
+    if not prompts.is_korean(user["target"]) or prompts.is_korean(user["native"]):
+        return False
+    return len(_HANGUL.findall(answer)) > len(_LATIN.findall(answer))
+
+
 def usable_correction(user: dict[str, Any], text: str, correction: str) -> bool:
     """Whether a correction from the model is worth sending.
 
@@ -221,6 +235,11 @@ async def _chat(
 
     if data.get("intent") == "question":
         answer = explanation or reply
+        if answer and _in_wrong_language(user, answer):
+            log.warning("the answer came back in the wrong language; asking again")
+            retry = content + prompts.wrong_language_note(user)
+            again = await llm.chat_json(system, [{"role": "user", "content": retry}])
+            answer = _text(again.get("explanation")) or _text(again.get("reply")) or answer
         if not answer:
             raise BotError("the model gave no answer to the question")
         await say(phone, answer, kind="explanation")
@@ -262,6 +281,12 @@ def _reaction_target(phone: str, event: Event) -> dict[str, Any] | None:
     return from_dori[-1] if from_dori else None
 
 
+async def _explanation(system: str, content: str) -> str:
+    """One model call that returns an explanation, or "" if it gave none."""
+    data = await llm.chat_json(system, [{"role": "user", "content": content}])
+    return _text(data.get("explanation")) or _text(data.get("reply"))
+
+
 async def _explain(phone: str, user: dict[str, Any], event: Event) -> None:
     """Explain the message a ❓ landed on, as an inline reply to it."""
     target = _reaction_target(phone, event)
@@ -269,18 +294,13 @@ async def _explain(phone: str, user: dict[str, Any], event: Event) -> None:
         log.info("ignored a question reaction that points at none of Dori's messages")
         return
 
-    data = await llm.chat_json(
-        prompts.explain_system(user),
-        [
-            {
-                "role": "user",
-                "content": prompts.explain_turn(
-                    user, _history(phone), target["text"], target["kind"]
-                ),
-            }
-        ],
-    )
-    explanation = _text(data.get("explanation")) or _text(data.get("reply"))
+    system = prompts.explain_system(user)
+    content = prompts.explain_turn(user, _history(phone), target["text"], target["kind"])
+    explanation = await _explanation(system, content)
+    if explanation and _in_wrong_language(user, explanation):
+        log.warning("the explanation came back in the wrong language; asking again")
+        retry = content + prompts.wrong_language_note(user)
+        explanation = await _explanation(system, retry) or explanation
     if not explanation:
         raise BotError("the model gave no explanation")
     await say(phone, explanation, kind="explanation", reply_to=target["loop_id"])
