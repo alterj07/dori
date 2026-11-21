@@ -20,7 +20,20 @@ Dori:  오 누구랑? ㅋㅋ 무슨 영화 봤어?
 
 Dori fixes at most two errors per message. Slang and shortenings that fit the style (ㅋㅋ, 대박, dropped particles in casual speech) are left alone. Mixing speech levels in one message counts as a mistake in every style, and 반말 counts as one only in business style.
 
-If you don't understand one of Dori's messages, react to it with the question mark tapback. Dori replies inline to that message and explains it in English: what it means, the slang in it and any cultural context.
+A fix that only changes punctuation or spacing is dropped before it reaches you, and a message with no Korean in it is never corrected. If you drop an English word into a Korean sentence, Dori will often give you the Korean word.
+
+If you don't understand one of Dori's messages, react to it with the question mark tapback. A ❓ emoji reaction works too. Dori replies inline to that message and explains it in English: what it means, the slang in it and any cultural context.
+
+```
+Dori:  오 대박 ㅋㅋ 어디 갔는데? 메뉴 뭐 시켰어?
+You:   ❓
+Dori:  Translation: Oh wow lol Where did you go? What did you order?
+       대박 = slang for wow, awesome, or jackpot
+       ㅋㅋ = text laughter like haha or lol
+       어디 갔는데? = casual Where did you go? with a friendly nudge
+       메뉴 뭐 시켰어? = casual What did you order on the menu?
+       Tone: upbeat and curious, typical close-friend texting style
+```
 
 You can also just ask, in English or in Korean: "what does 대박 mean?" Dori answers in English and leaves the story where it was. It then stays out of character, so you can ask follow-up questions without the chat cutting in. When you send a normal message again, such as a reply in Korean or "ok got it", Dori picks the conversation back up.
 
@@ -52,7 +65,7 @@ When a text arrives, the server also asks LoopMessage to mark it as read and sho
 
 Each chat turn is a single call to NVIDIA Nemotron 3 Ultra. The prompt carries the user's profile and the last 20 messages, and the model returns one JSON object with four fields: `intent` (chat or question), `correction`, `explanation` and `reply`.
 
-Ultra is the only Nemotron model that lists Korean as supported. In a side-by-side run of `scripts/bench_models.py`, the faster Nemotron 3.5 Lightning returned valid JSON but missed the speech-level mistake both times.
+Ultra is the only Nemotron model that lists Korean as supported. `scripts/eval_prompts.py` runs the chat prompt over 26 learner messages and checks whether each one gets fixed, left alone or treated as a question. In the last run Ultra matched 25 of them. The much faster Nemotron 3.5 Lightning matched 21 of 24 on an earlier version of the set, but several of its fixes were wrong. It changed 만났어요 to 만났고, for example, where the right fix is 만났어.
 
 Lightning is still the fallback. If Ultra errors, returns a 429 or takes longer than 10 seconds, the call is retried once on Lightning and the log records why. The JSON is parsed leniently: code fences, stray text around the object and a cut-off object are all handled. If the model answers in plain prose, that text goes out as an ordinary reply.
 
@@ -127,6 +140,17 @@ You can talk to the same bot without a phone. This runs the real prompts against
 
 `--verbose` shows the raw model output after each turn, which helps when you are tuning a prompt. The chat uses a throwaway database unless you pass `--db some-file.db`.
 
+### Scoring the prompts
+
+`scripts/eval_prompts.py` is how the prompts were tuned. Each case names what a good tutor would do with a message, and the script prints what the model did next to it:
+
+```bash
+.venv/bin/python scripts/eval_prompts.py
+.venv/bin/python scripts/eval_prompts.py --model nvidia/nemotron-3.5-lightning-30b-a3b
+```
+
+Run it after any change to `dori/prompts.py`. The model is sampled at temperature 0.6, so one or two cases can flip between runs.
+
 ## Project structure
 
 ```
@@ -143,6 +167,7 @@ dori/
 tests/             pytest suite, one file per module
 scripts/
   chat_cli.py      chat with Dori in the terminal
+  eval_prompts.py  scores the chat prompt on a fixed set of learner messages
   bench_models.py  times Nemotron models on one Korean correction
 ```
 
