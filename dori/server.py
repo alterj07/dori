@@ -26,6 +26,9 @@ log = logging.getLogger("dori.server")
 
 FALLBACK_TEXT = "Sorry, can you say that again? 🙏"
 
+# The classic "?" tapback, plus the emoji people pick when they react with one.
+QUESTION_REACTIONS = frozenset({"question", "?", "？", "❓", "❔", "⁉", "⁉️"})
+
 
 async def run_turn(phone: str, event: Event) -> None:
     """Run one bot turn. If it fails, log the traceback and apologise to the user."""
@@ -170,9 +173,9 @@ def route(payload: dict[str, Any]) -> str:
 
     if event == "message_reaction":
         reaction = payload.get("reaction")
-        if reaction == "question":
+        if isinstance(reaction, str) and reaction.strip() in QUESTION_REACTIONS:
             text = (payload.get("text") or "").strip()
-            dispatcher.add_reaction(phone, message_id, reaction, text)
+            dispatcher.add_reaction(phone, message_id, "question", text)
             return "dispatched"
         return f"logged: reaction {reaction}"
 
