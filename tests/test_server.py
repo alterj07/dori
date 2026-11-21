@@ -161,6 +161,16 @@ async def test_a_question_reaction_skips_the_debounce(client, turns, monkeypatch
     assert turns == [(PHONE, Event(kind="reaction", message_id="out-9", reaction="question"))]
 
 
+async def test_a_reaction_carries_the_text_sent_with_it(client, turns):
+    payload = {**reaction("question", "out-9"), "text": "오 대박!"}
+
+    await client.post("/webhook", json=payload, headers=AUTH)
+    await server.dispatcher.idle()
+
+    expected = Event(kind="reaction", text="오 대박!", message_id="out-9", reaction="question")
+    assert turns == [(PHONE, expected)]
+
+
 @pytest.mark.parametrize(
     "payload",
     [
