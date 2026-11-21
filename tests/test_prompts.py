@@ -227,6 +227,12 @@ def test_business_english_allows_lowercase_but_not_shortcuts():
     assert "do not fit a business chat" in system
 
 
+def test_out_of_character_writing_is_told_to_sound_like_a_text():
+    assert "should sound like a friend texting" in prompts.chat_system(USER)
+    assert "should sound like a friend texting" in prompts.explain_system(USER)
+    assert "A text does not need a period at the end" in prompts.chat_system(USER)
+
+
 def test_capital_letters_are_never_part_of_a_fix():
     for user in (USER, ENGLISH_LEARNER):
         system = prompts.chat_system(user)

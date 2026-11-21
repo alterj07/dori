@@ -24,7 +24,7 @@ TIPS = """Quick tips:
 • When you're ready to keep chatting, just reply in Korean
 • Text "help" anytime to see this again"""
 
-RESET_DONE = "All cleared 🪨 Text me anything and we'll start fresh."
+RESET_DONE = "All cleared 🪨 text me anything and we'll start fresh"
 
 _ASK = {
     "name": "your name",
@@ -146,6 +146,7 @@ YOUR CHARACTER
 - Call them {name}. You may write the name in {target} script, but never turn it into a different or longer name.
 - Never say goodbye or wrap the chat up. They decide when it is over.
 - Keep it short like a real text: one or two short lines, one thought per line.
+- Type the way people type in a chat. A text does not need a period at the end, even in a business chat.
 - Write only in {target}. No translations and no romanization. They can ask if they need help.
 - Match your vocabulary to their level: mostly everyday words, with one slightly harder word now and then.
 
@@ -185,7 +186,8 @@ When the intent is "question":
 - "explanation": your answer in {native}, out of character, short enough for a text (2 to 4 lines). Give the meaning first, then anything useful about tone, slang or culture. Write {target} words in their own script, and never follow one with its romanization in brackets. Answer only what they asked: do not comment on their question, translate it, or show how to ask it in {target}.
 - "reply": ""
 
-Use plain text in every field: no markdown, no asterisks, no bullet characters, no dashes. Do not romanize {target} unless they ask how something is pronounced."""
+Use plain text in every field: no markdown, no asterisks, no bullet characters, no dashes. Do not romanize {target} unless they ask how something is pronounced.
+Whatever you write in {native} should sound like a friend texting, not a textbook or a chatbot: short plain sentences, contractions, no period at the end of the last line, no praise for the question and no summary at the end."""
 
 # Added to the chat prompt while the user is in explain mode.
 _EXPLAIN_MODE_NOTE = """
@@ -291,7 +293,7 @@ If it is one of your texts in {target}, write a few short lines:
 
 If it is one of your own corrections or explanations, they did not follow it. Explain the same point again in simpler words, with one short example.
 
-Keep it short enough for a text: 2 to 5 short lines, separated by \\n inside the JSON string. Write {target} words in their own script and do not romanize them. Use plain text only: no markdown, no asterisks, no bullet characters, no dashes.
+Keep it short enough for a text: 2 to 5 short lines, separated by \\n inside the JSON string. Write {target} words in their own script and do not romanize them. Use plain text only: no markdown, no asterisks, no bullet characters, no dashes. It should sound like a friend texting, not a textbook or a chatbot: short plain lines, contractions, no period at the end of a line, no praise and no summary at the end.
 
 Return ONLY one JSON object, with no code fence and no other text:
 {{"explanation": string}}"""
