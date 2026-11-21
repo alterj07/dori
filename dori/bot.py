@@ -136,12 +136,16 @@ async def _onboard(phone: str, user: dict[str, Any], text: str, message_id: str 
     )
     updates = _profile_updates(data, missing)
     _settle_languages(text, updates, missing)
+    comment = _comment(data)
+    if not updates and not comment and missing[0] == "level_desc" and _could_be_a_level(text):
+        # "ok" or "so-so" is a fair answer to "your level, in your own words".
+        updates["level_desc"] = text
     if updates:
         user = store.save_user(phone, **updates)
 
     missing = [field for field in store.PROFILE_FIELDS if not user[field]]
     if missing:
-        await say(phone, prompts.ask_missing(missing), kind="system")
+        await say(phone, prompts.ask_missing(missing, comment), kind="system")
         return
 
     store.set_mode(phone, "chat")
@@ -150,6 +154,20 @@ async def _onboard(phone: str, user: dict[str, Any], text: str, message_id: str 
         await say(phone, warning, kind="system")
     await say(phone, prompts.tips(user), kind="system")
     await _open_conversation(phone, user)
+
+
+def _comment(data: dict[str, Any]) -> str:
+    """The model's one-line reaction to an onboarding message that was not an answer.
+
+    Anything long is dropped: it would be the model starting to chat.
+    """
+    comment = " ".join(_texted(data.get("comment")).split())
+    return comment if len(comment) <= 160 else ""
+
+
+def _could_be_a_level(text: str) -> bool:
+    """True for a short one-line statement, which is all a level description has to be."""
+    return len(text) <= 120 and "\n" not in text and "?" not in text
 
 
 def _profile_updates(data: dict[str, Any], missing: list[str]) -> dict[str, str]:
