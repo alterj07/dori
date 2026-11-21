@@ -270,6 +270,57 @@ async def test_a_fix_that_only_changes_spacing_or_punctuation_is_dropped(sent, m
     assert [m["text"] for m in sent] == ["오 좋았겠다!"]
 
 
+@pytest.fixture
+def practicing_english():
+    """A Korean speaker practicing English, mid-chat."""
+    store.save_user(
+        PHONE,
+        mode="chat",
+        name="Min",
+        native="Korean",
+        target="English",
+        level_desc="conversational",
+        style="casual",
+    )
+    store.add_message(PHONE, "bot", "hey min! how was your day", loop_id="out-0")
+
+
+@pytest.mark.parametrize(
+    ("typed", "fix"),
+    [
+        ("im not joking", "I'm not joking."),
+        ("hi i have a girlfriend", "Hi, I have a girlfriend."),
+        ("it should", "It should."),
+        ("in physics class senior year of highschool", "In physics class senior year of high school"),
+    ],
+)
+async def test_capitals_apostrophes_and_periods_are_not_corrected(
+    sent, model, practicing_english, typed, fix
+):
+    model.replies = [chat_reply("oh really?", correction=fix, explanation="대문자로 시작해야 해요.")]
+
+    await bot.handle_turn(PHONE, message(typed, "in-5"))
+
+    assert [m["text"] for m in sent] == ["oh really?"]
+
+
+async def test_a_real_english_error_is_still_corrected(sent, model, practicing_english):
+    model.replies = [
+        chat_reply(
+            "nice, what did you do there?",
+            correction="yesterday i went to school",
+            explanation="어제 일이니까 went예요.",
+        )
+    ]
+
+    await bot.handle_turn(PHONE, message("yesterday i go to school", "in-5"))
+
+    assert sent[0] == {
+        "text": "✏️ yesterday i went to school\n💬 어제 일이니까 went예요.",
+        "reply_to": "in-5",
+    }
+
+
 async def test_a_fix_that_only_removes_correct_particles_is_dropped(sent, model, chatting):
     model.replies = [
         chat_reply(

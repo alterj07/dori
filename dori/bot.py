@@ -198,15 +198,21 @@ async def _open_conversation(phone: str, user: dict[str, Any]) -> None:
 
 # --- Chat ---
 
-_SPACING_AND_PUNCTUATION = re.compile(r"[\s.,!?~…]+")
+_SPACING_AND_PUNCTUATION = re.compile(r"[\s.,!?~…'’\"“”:;-]+")
 
 
 _HANGUL = re.compile(r"[가-힣ㄱ-ㅎㅏ-ㅣ]")
 
 
 def _same(first: str, second: str) -> bool:
-    """True when two texts differ only in spacing and punctuation."""
-    return _SPACING_AND_PUNCTUATION.sub("", first) == _SPACING_AND_PUNCTUATION.sub("", second)
+    """True when two texts differ only in spacing, punctuation and capital letters.
+
+    None of those is a mistake in a text message: people type "im not joking"
+    and leave the period off.
+    """
+    first = _SPACING_AND_PUNCTUATION.sub("", first).casefold()
+    second = _SPACING_AND_PUNCTUATION.sub("", second).casefold()
+    return first == second
 
 
 _LATIN = re.compile(r"[A-Za-z]")
