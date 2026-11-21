@@ -26,8 +26,28 @@ log = logging.getLogger("dori.server")
 
 FALLBACK_TEXT = "Sorry, can you say that again? 🙏"
 
-# The classic "?" tapback, plus the emoji people pick when they react with one.
-QUESTION_REACTIONS = frozenset({"question", "?", "？", "❓", "❔", "⁉", "⁉️"})
+# A reaction containing any of these counts as "I don't understand this".
+_QUESTION_MARKS = "?？❓❔⁉"
+
+
+def is_question_reaction(payload: dict[str, Any]) -> bool:
+    """True when a reaction webhook is the user putting a question mark on a message.
+
+    LoopMessage sends the classic "?" tapback as "question" and an emoji
+    reaction as the emoji itself. Real payloads carry it in reaction_type,
+    while the docs call the field reaction, so both are read.
+    """
+    reaction = payload.get("reaction_type") or payload.get("reaction")
+    if not isinstance(reaction, str):
+        return False
+    if payload.get("reaction_event", "placed") != "placed":
+        return False  # the user took the reaction back
+    if payload.get("reaction_direction", "inbound") != "inbound":
+        return False  # a reaction sent from our side
+    name = reaction.strip().lower()
+    if name.startswith("-"):
+        return False  # the older way of marking a removed reaction
+    return "question" in name or any(mark in name for mark in _QUESTION_MARKS)
 
 
 async def run_turn(phone: str, event: Event) -> None:
@@ -173,11 +193,11 @@ def route(payload: dict[str, Any]) -> str:
         return "buffered"
 
     if event == "message_reaction":
-        reaction = payload.get("reaction")
-        if isinstance(reaction, str) and reaction.strip() in QUESTION_REACTIONS:
+        if is_question_reaction(payload):
             text = (payload.get("text") or "").strip()
             dispatcher.add_reaction(phone, message_id, "question", text)
             return "dispatched"
+        reaction = payload.get("reaction_type") or payload.get("reaction")
         return f"logged: reaction {reaction}"
 
     return "logged"
