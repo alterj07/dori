@@ -594,6 +594,11 @@ async def commands(h: Harness) -> None:
     p.check("help ignores capitals and punctuation", [o.text for o in outs] == [tips], show(outs))
     p.check("help does not change the mode", p.profile().get("mode") == "chat", str(p.profile()))
 
+    outs = await p.text("/style business")
+    p.check("the style command switches style", [o.text for o in outs] == [prompts.style_changed("business")] and p.profile().get("style") == "business", show(outs))
+    outs = await p.text("/style pirate")
+    p.check("an unknown style shows the choices", [o.text for o in outs] == [prompts.STYLE_HELP] and p.profile().get("style") == "business", show(outs))
+
     outs = await p.text("/reset")
     p.check("reset confirms", [o.text for o in outs] == [prompts.RESET_DONE], show(outs))
     p.check("reset forgets the user", p.profile() == {} and store.recent(p.number) == [])
@@ -883,6 +888,8 @@ async def main() -> int:
         config.WEBHOOK_SECRET = SECRET
         config.LOOP_API_KEY = "mass-test-loop-key"
         config.DEBOUNCE_S = 0.4
+        config.ONBOARDING_DEBOUNCE_S = 0.4
+        config.RATE_LIMIT_WAITS_S = ()  # this script does its own waiting on a 429
         config.BUBBLE_GAP_S = 0.0
         # Waiting in the queue, or for a rate limit to clear, must not look
         # like a slow model and trigger the fallback.
