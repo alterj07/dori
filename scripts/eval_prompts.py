@@ -36,6 +36,9 @@ class Case:
     text: str  # the learner's new message
     expect: str  # "fix", "none" or "question"
     mode: str = "chat"
+    replied_to: str = ""  # an earlier message of the learner's that this one replies to inline
+    needs: str = ""  # text the answer has to contain
+    avoids: str = ""  # text the answer must not contain
 
 
 CASES = [
@@ -64,6 +67,18 @@ CASES = [
     Case("casual", "헐 대박!", "대박이 무슨 뜻이야?", "question"),
     Case("casual", "배고파?", "how do I say I'm hungry?", "question"),
     Case("casual", "대박 means awesome.", "and 헐?", "question", mode="explain"),
+    # Vague questions in English: answer about the Korean, never about the English.
+    Case(
+        "romantic",
+        "응, 주문! 🍜 뭐 먹고 싶어? 말해줘~",
+        "whats that",
+        "question",
+        replied_to="주문?",
+        needs="주문",
+        avoids="english",
+    ),
+    Case("casual", "헐 대박!", "what does that mean", "question", needs="대박", avoids="english"),
+    Case("casual", "오늘 완전 꿀잼이었어", "i dont get it", "question", needs="꿀잼", avoids="english"),
     # Business: polite speech is expected.
     Case("business", "오늘 하루 어떠셨어요?", "오늘 회사에서 일 많이 했어", "fix"),
     Case("business", "오늘 하루 어떠셨어요?", "오늘은 회의가 많아서 조금 바빴어요", "none"),
@@ -99,14 +114,22 @@ async def run_case(case: Case, gate: asyncio.Semaphore) -> bool:
     user = user_for(case)
     kind = "explanation" if case.mode == "explain" else "chat"
     history = [{"role": "bot", "kind": kind, "text": case.dori}]
+    replied_to = None
+    if case.replied_to:
+        replied_to = {"role": "user", "kind": "chat", "text": case.replied_to}
+    content = prompts.chat_turn(user, history, case.text, replied_to)
     async with gate:
         completion = await llm.complete(
-            prompts.chat_system(user),
-            [{"role": "user", "content": prompts.chat_turn(user, history, case.text)}],
+            prompts.chat_system(user), [{"role": "user", "content": content}]
         )
     data = llm.parse_json(completion.text) or {}
     got = verdict(case, data)
-    passed = got == case.expect
+    answer = bot._text(data.get("explanation")) or bot._text(data.get("reply"))
+    passed = (
+        got == case.expect
+        and case.needs in answer
+        and not (case.avoids and case.avoids.lower() in answer.lower())
+    )
 
     fallback = " FALLBACK" if completion.fallback else ""
     print(f"[{'PASS' if passed else 'FAIL'}] {case.style:<9} want {case.expect:<8} got {got:<8} "
