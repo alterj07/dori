@@ -495,6 +495,41 @@ async def test_help_during_onboarding_is_read_as_an_answer(sent, model):
     assert [m["text"] for m in sent] == [prompts.ask_missing(list(store.PROFILE_FIELDS))]
 
 
+# --- Answers in the wrong language ---
+
+KOREAN_ANSWER = "오늘 하루가 많이 힘들었구나, 푹 쉬어.\n토닥토닥 = 등을 가볍게 두드리다"
+ENGLISH_ANSWER = "It means: you had a hard day, rest well.\n토닥토닥 = patting someone gently"
+
+
+async def test_an_explanation_in_korean_is_asked_for_again_in_english(sent, model, chatting):
+    model.replies = [{"explanation": KOREAN_ANSWER}, {"explanation": ENGLISH_ANSWER}]
+
+    await bot.handle_turn(PHONE, question_reaction("out-0"))
+
+    assert [m["text"] for m in sent] == [ENGLISH_ANSWER]
+    assert "Write it again in English" in model.calls[1]["user"]
+
+
+async def test_a_question_answered_in_korean_is_asked_for_again_in_english(sent, model, chatting):
+    model.replies = [
+        {**QUESTION, "explanation": KOREAN_ANSWER},
+        {**QUESTION, "explanation": ENGLISH_ANSWER},
+    ]
+
+    await bot.handle_turn(PHONE, message("what does 토닥토닥 mean?", "in-5"))
+
+    assert [m["text"] for m in sent] == [ENGLISH_ANSWER]
+    assert "Write it again in English" in model.calls[1]["user"]
+
+
+async def test_an_english_answer_that_quotes_korean_is_not_asked_for_again(sent, model, chatting):
+    model.replies = [{"explanation": ENGLISH_ANSWER}]
+
+    await bot.handle_turn(PHONE, question_reaction("out-0"))
+
+    assert len(model.calls) == 1
+
+
 # --- Inline replies from the user ---
 
 
