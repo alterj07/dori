@@ -169,6 +169,16 @@ def test_explain_mode_adds_a_note_about_follow_up_questions():
     assert placeholders(in_explain) == []
 
 
+def test_chat_prompt_treats_the_learner_as_fluent_in_their_own_language():
+    system = prompts.chat_system(USER)
+
+    assert "They are fluent in English" in system
+    assert "Never explain, translate or correct what they write in English" in system
+    assert "is about the message they replied to" in system
+    assert "Answer only what they asked" in system
+    assert placeholders(system) == []
+
+
 def test_chat_turn_names_the_message_an_inline_reply_answers():
     own = {"role": "user", "kind": "chat", "text": "주문?"}
     doris = {"role": "bot", "kind": "chat", "text": "바로 주문할게!"}
