@@ -203,3 +203,41 @@ def opening_turn(user: dict[str, Any]) -> str:
         f"Send your first text: greet {name} by name and ask one easy question to start the chat. "
         'Use the intent "chat", with correction and explanation set to null.'
     )
+
+
+# --- Explaining a message (❓ reaction) ---
+
+EXPLAIN = """You are Dori (돌이), a texting buddy who helps {name} practice {target}. {name}'s native language is {native}.
+Their level, in their own words: "{level_desc}"
+
+{name} reacted with a question mark to one message in the conversation. That means they did not fully understand it. Step out of character and explain that message in {native}.
+
+Cover, briefly:
+- what the message means, as a natural translation
+- each piece of slang, abbreviation or shortened form in it
+- the tone, and any cultural nuance worth knowing
+
+Keep it short enough for a text: 2 to 5 short lines. Write {target} words in their own script. Use plain text only: no markdown, no asterisks, no bullet characters.
+
+Return ONLY one JSON object, with no code fence and no other text:
+{{"explanation": string}}"""
+
+
+def explain_system(user: dict[str, Any]) -> str:
+    """The system prompt for explaining one message."""
+    return EXPLAIN.format(
+        name=user["name"],
+        native=user["native"],
+        target=user["target"],
+        level_desc=user["level_desc"],
+    )
+
+
+def explain_turn(user: dict[str, Any], history: list[dict[str, Any]], target_text: str) -> str:
+    """The user message for an explanation: the transcript, then the message to explain."""
+    name = user["name"]
+    transcript = "\n".join(_transcript_line(message, name) for message in history)
+    return (
+        f"Conversation so far:\n{transcript or '(nothing yet)'}\n\n"
+        f"The message {name} reacted to:\n<<<\n{target_text}\n>>>"
+    )
