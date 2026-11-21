@@ -6,6 +6,8 @@ Dori is a Korean practice buddy that lives in iMessage. You text it the way you 
 
 You text first. Dori answers with a welcome that asks for your name, your native language, the language you want to practice, your level in your own words, and a style: casual, friendly, romantic or business. You can answer in one free-form message. The model pulls the fields out of it, and the code decides what is still missing and asks only for that.
 
+If either language is not English or Korean, Dori says so before the chat starts: "Just a warning, I'm only tuned for English and Korean so far".
+
 After that Dori chats in Korean, in character for the style you picked. Casual, friendly and romantic use 반말. Business uses 합니다체 or 해요체.
 
 When your message has a real mistake, Dori replies inline to that message with the corrected sentence and a short explanation in English, then carries on the conversation in a separate text:
@@ -74,6 +76,7 @@ Lightning is still the fallback. If Ultra errors, returns a 429 or takes longer 
 ## Limits
 
 - Dori has mostly been tested with English speakers learning Korean. Korean speakers practicing English have eight scoring cases and one real conversation behind them. There, texting habits such as a lowercase i, no final period and "im" are left alone, while real errors such as "she dont like" are fixed. Other pairs may work, but nobody has tried.
+- NVIDIA rate-limits Ultra tightly. In testing it began refusing calls at roughly 15 to 20 a minute. Those turns fall back to Lightning, whose corrections are worse, so several people texting at once will notice.
 - The LoopMessage sandbox allows five contacts, and Dori can only reply within 24 hours of a contact's last text.
 - Dori never texts first, so there are no reminders. Voice messages, group chats and a progress dashboard are not built.
 
@@ -168,6 +171,7 @@ dori/
   turn_log.py      the JSON-lines debug log
 tests/             pytest suite, one file per module
 scripts/
+  mass_test.py     runs the whole app through 21 scripted conversations
   chat_cli.py      chat with Dori in the terminal
   eval_prompts.py  scores the chat prompt on a fixed set of learner messages
   bench_models.py  times Nemotron models on one Korean correction
@@ -182,3 +186,18 @@ make test
 ```
 
 The tests use a temporary database, fake keys and a scripted model. They never reach LoopMessage or NVIDIA: a fixture fails any test that tries to open a real network connection.
+
+### End-to-end run
+
+`scripts/mass_test.py` drives the whole app through 21 scripted conversations. The FastAPI app, the debounce, the bot and the Nemotron calls are real. LoopMessage is replaced by a fake that records what Dori would send, and every inbound message is a webhook shaped like the ones LoopMessage delivers. It uses fictional phone numbers and a throwaway database.
+
+```bash
+.venv/bin/python scripts/mass_test.py
+.venv/bin/python scripts/mass_test.py --only "reactions,commands"
+```
+
+It covers onboarding in several shapes, corrections in each style, questions and explain mode, reactions, inline replies, the commands, webhook auth and duplicates, two people at once, a 16-turn conversation, odd inputs, and injected failures of LoopMessage and of both models. Every message goes to `logs/mass_test_transcript.txt`.
+
+A full run makes about 130 model calls. It spaces them 4 seconds apart and waits whenever NVIDIA answers 429, so allow ten minutes or more.
+
+The first full run passed 140 of 150 checks, but NVIDIA rate-limited Ultra and 54 of its 122 turns were answered by the fallback model. A slower re-run of the six affected scenarios passed 41 of 42 with Ultra answering every turn. The one miss was an English line inside a Korean reply, which the bot now removes.
