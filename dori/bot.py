@@ -212,13 +212,39 @@ def _in_wrong_language(user: dict[str, Any], answer: str) -> bool:
     return len(_HANGUL.findall(answer)) > len(_LATIN.findall(answer))
 
 
+_PUNCTUATION = re.compile(r"[.,!?~…]+")
+_PARTICLES = "을를이가은는"
+
+
+def _only_drops_particles(text: str, correction: str) -> bool:
+    """True when a "fix" does nothing but remove particles the user wrote.
+
+    Dropping 을/를 and the like is common in casual texts, but keeping them is
+    never wrong, so this is not a correction.
+    """
+    original = _PUNCTUATION.sub("", text).split()
+    fixed = _PUNCTUATION.sub("", correction).split()
+    if len(original) != len(fixed):
+        return False
+    dropped = False
+    for before, after in zip(original, fixed):
+        if before == after:
+            continue
+        if len(before) > 1 and before[-1] in _PARTICLES and before[:-1] == after:
+            dropped = True
+            continue
+        return False
+    return dropped
+
+
 def usable_correction(user: dict[str, Any], text: str, correction: str) -> bool:
     """Whether a correction from the model is worth sending.
 
-    The model sometimes "fixes" punctuation, or translates a message that was
-    written in the user's own language. Neither is a mistake in their Korean.
+    The model sometimes "fixes" punctuation, removes a particle that was fine,
+    or translates a message that was written in the user's own language. None
+    of those is a mistake in their Korean.
     """
-    if not correction or _same(correction, text):
+    if not correction or _same(correction, text) or _only_drops_particles(text, correction):
         return False
     if prompts.is_korean(user["target"]) and not _HANGUL.search(text):
         return False

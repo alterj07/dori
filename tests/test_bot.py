@@ -250,6 +250,30 @@ async def test_a_fix_that_only_changes_spacing_or_punctuation_is_dropped(sent, m
     assert [m["text"] for m in sent] == ["오 좋았겠다!"]
 
 
+async def test_a_fix_that_only_removes_correct_particles_is_dropped(sent, model, chatting):
+    model.replies = [
+        chat_reply(
+            "오 김치찌개!",
+            correction="나는 김치찌개 먹었어 진짜 맛있었어",
+            explanation="Dropped 를 for a more natural flow.",
+        )
+    ]
+
+    await bot.handle_turn(PHONE, message("나는 김치찌개를 먹었어 진짜 맛있었어", "in-5"))
+
+    assert [m["text"] for m in sent] == ["오 김치찌개!"]
+
+
+async def test_a_fix_that_changes_a_wrong_particle_is_kept(sent, model, chatting):
+    model.replies = [
+        chat_reply("오!", correction="나는 사과를 먹었어", explanation="사과 ends in a vowel: 를.")
+    ]
+
+    await bot.handle_turn(PHONE, message("나는 사과을 먹었어", "in-5"))
+
+    assert sent[0]["text"].startswith("✏️ 나는 사과를 먹었어")
+
+
 async def test_a_message_with_no_korean_in_it_is_never_corrected(sent, model, chatting):
     model.replies = [
         chat_reply("오 운동했구나!", correction="오늘 헬스장 갔어", explanation="In Korean.")
