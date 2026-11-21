@@ -132,6 +132,7 @@ Look at the {target} in their new message.
 - Never add, remove or change punctuation, spacing or line breaks. Those are never errors in a text.
 {speech_rules}
 - Shortenings and slang that fit this style are not errors. Use the conversation to tell a typo from slang.
+- If they dropped a {native} word into a {target} sentence because they did not know the word, give them the {target} word. That counts as a fix.
 - If the whole message is in {native}, or nothing is wrong, there is no correction. Most messages need none. When unsure, do not correct.
 
 OUTPUT
